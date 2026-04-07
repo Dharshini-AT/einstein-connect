@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 105 30% 98%;
+    --foreground: 155 40% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 155 40% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 155 40% 12%;
+
+    --primary: 155 42% 18%;
+    --primary-foreground: 152 81% 96%;
+
+    --secondary: 38 92% 44%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 155 20% 92%;
+    --muted-foreground: 155 10% 45%;
+
+    --accent: 152 76% 80%;
+    --accent-foreground: 163 88% 20%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 155 20% 86%;
+    --input: 155 20% 86%;
+    --ring: 155 42% 18%;
+
+    --radius: 0.75rem;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 220 25% 10%;
+
+    --sidebar-background: 155 42% 18%;
+    --sidebar-foreground: 152 81% 96%;
+    --sidebar-primary: 38 92% 44%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 155 40% 25%;
+    --sidebar-accent-foreground: 152 81% 96%;
+    --sidebar-border: 155 40% 22%;
+    --sidebar-ring: 38 92% 44%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(217 91% 60%), hsl(230 80% 50%));
+  }
+
+  .gradient-card {
+    background: linear-gradient(145deg, hsl(220 25% 16%), hsl(220 25% 12%));
+  }
+
+  .glass-card {
+    background: hsl(220 25% 14% / 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(220 20% 24%);
+  }
+}
