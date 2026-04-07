@@ -9,6 +9,9 @@ import StudentList from "./pages/StudentList";
 import StudentDetail from "./pages/StudentDetail";
 import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import StudentsRegistry from "./pages/admin/StudentsRegistry";
+import TeachersRegistry from "./pages/admin/TeachersRegistry";
+import AcademicReports from "./pages/admin/AcademicReports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,12 +23,21 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Public */}
           <Route path="/" element={<Login />} />
+
+          {/* Faculty */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/students/grade/:grade" element={<StudentList />} />
-          <Route path="/student/:rollNo" element={<StudentDetail />} />
+          <Route path="/student/:id" element={<StudentDetail />} />
+
+          {/* Admin */}
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/students" element={<StudentsRegistry />} />
+          <Route path="/admin/teachers" element={<TeachersRegistry />} />
+          <Route path="/admin/reports" element={<AcademicReports />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
