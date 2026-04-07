@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import Faculty from '../models/Faculty.js';
+import Student from '../models/Student.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -25,11 +26,17 @@ router.post('/login', async (req, res) => {
 
   try {
     const faculty = await Faculty.findOne({ email });
-    if (faculty) {
-      // In a real application, verify passwords here using bcrypt.
+    if (faculty && faculty.password === password) {
       const token = generateToken(faculty, 'faculty');
       return res.json({ token, user: faculty, role: 'faculty' });
     }
+
+    const student = await Student.findOne({ email });
+    if (student && student.password === password) {
+      const token = generateToken(student, 'student');
+      return res.json({ token, user: student, role: 'student' });
+    }
+    
     res.status(401).json({ message: 'Invalid credentials' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
