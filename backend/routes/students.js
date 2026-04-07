@@ -5,6 +5,15 @@ import OpenAI from 'openai';
 
 const router = express.Router();
 
+// GET /api/students — list all students (admin use)
+router.get('/', async (req, res) => {
+  try {
+    const students = await Student.find().select('-__v').sort({ grade: 1, rollNo: 1 });
+    res.json(students);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
 
 // GET /api/students/:id — full student profile
 router.get('/:id', verifyToken, async (req, res) => {

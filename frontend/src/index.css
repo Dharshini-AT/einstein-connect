@@ -58,6 +58,11 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    background-color: #f9f9fb;
+  }
+
+  h1, h2, h3, .headline-font {
+    font-family: 'Manrope', sans-serif;
   }
 }
 

@@ -4,6 +4,16 @@ import { verifyToken, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// GET /api/faculty — list all faculty (admin)
+router.get('/', async (req, res) => {
+  try {
+    const faculties = await Faculty.find().select('-__v');
+    res.json(faculties);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // GET /api/faculty/:id/grades — returns assigned grade IDs
 router.get('/:id/grades', verifyToken, requireRole('faculty'), async (req, res) => {
   try {
