@@ -31,13 +31,13 @@ router.post('/login', async (req, res) => {
       return res.json({ token, user: faculty, role: 'faculty' });
     }
 
+    // Block student login — this portal is for faculty and admin only
     const student = await Student.findOne({ email });
-    if (student && student.password === password) {
-      const token = generateToken(student, 'student');
-      return res.json({ token, user: student, role: 'student' });
+    if (student) {
+      return res.status(403).json({ message: 'Students do not have access to this portal. Please contact your teacher.' });
     }
-    
-    res.status(401).json({ message: 'Invalid credentials' });
+
+    res.status(401).json({ message: 'Invalid credentials. Only faculty and admin can log in.' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

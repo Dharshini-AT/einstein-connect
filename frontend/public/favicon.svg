@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect width="100" height="100" rx="20" fill="#000666"/>
+  <text x="50" y="45" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">EC</text>
+  <rect x="20" y="58" width="60" height="4" rx="2" fill="#bdc2ff"/>
+  <rect x="30" y="68" width="40" height="4" rx="2" fill="#bdc2ff" opacity="0.6"/>
+</svg>
