@@ -1,234 +1,262 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, Edit, Lightbulb, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Navbar from "@/components/Navbar";
-import ManualEntryModal from "@/components/ManualEntryModal";
+import { ArrowLeft, Loader2, TrendingDown, TrendingUp, Lightbulb, AlertTriangle, CheckCircle, BarChart3 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
+type Status = "good" | "average" | "weak";
+
+const STATUS_COLOR: Record<Status, string> = {
+  good:    "text-green-700 bg-green-50 border-green-200",
+  average: "text-amber-700 bg-amber-50 border-amber-200",
+  weak:    "text-red-700 bg-red-50 border-red-200",
+};
+
+const STATUS_BAR: Record<Status, string> = {
+  good:    "bg-green-500",
+  average: "bg-amber-400",
+  weak:    "bg-red-500",
+};
+
+const STATUS_ICON: Record<Status, JSX.Element> = {
+  good:    <CheckCircle className="h-4 w-4 text-green-600" />,
+  average: <TrendingUp  className="h-4 w-4 text-amber-500" />,
+  weak:    <TrendingDown className="h-4 w-4 text-red-500" />,
+};
+
+const ScoreBar = ({ pct, status }: { pct: number; status: Status }) => (
+  <div className="w-full h-2 bg-[#f3f3f5] rounded-full overflow-hidden">
+    <div className={`h-full rounded-full transition-all duration-700 ${STATUS_BAR[status]}`} style={{ width: `${pct}%` }} />
+  </div>
+);
+
 const StudentDetail = () => {
-  const { rollNo } = useParams<{ rollNo: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [student, setStudent] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [manualOpen, setManualOpen] = useState(false);
-  const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null);
-  const [topicScoresView, setTopicScoresView] = useState<string | null>(null);
-  const [showRecommendations, setShowRecommendations] = useState(false);
-  const [aiQuestions, setAiQuestions] = useState<any[]>([]);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [student, setStudent]   = useState<any>(null);
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [loading, setLoading]   = useState(true);
+  const [tab, setTab]           = useState<"overview" | "subjects">("overview");
+  const role = localStorage.getItem("role");
 
   useEffect(() => {
-    // rollNo param is actually the student _id passed from StudentList
-    const fetchStudent = async () => {
+    const load = async () => {
       try {
-        const data = await api.get(`/students/${rollNo}`);
-        setStudent(data);
+        const [s, a] = await Promise.all([
+          api.get(`/students/${id}`),
+          api.get(`/students/${id}/analysis`),
+        ]);
+        setStudent(s);
+        setAnalysis(a);
       } catch (err: any) {
         toast({ title: "Error", description: err.message, variant: "destructive" });
       } finally {
         setLoading(false);
       }
     };
-    fetchStudent();
-  }, [rollNo]);
+    load();
+  }, [id]);
 
-  const handleViewTopics = (subjectId: string) => {
-    if (topicScoresView === subjectId) {
-      setTopicScoresView(null);
-      setShowRecommendations(false);
-    } else {
-      setTopicScoresView(subjectId);
-      setShowRecommendations(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f9f9fb] flex items-center justify-center">
+        <div className="flex items-center gap-2 text-[#767683]">
+          <Loader2 className="h-5 w-5 animate-spin" /> Loading student profile...
+        </div>
+      </div>
+    );
+  }
 
-  const handleAI = async () => {
-    setAiLoading(true);
-    setShowRecommendations(true);
-    try {
-      const questions = await api.get(`/students/${student._id}/quiz-recommend`);
-      setAiQuestions(questions);
-    } catch (err: any) {
-      toast({ title: "AI Error", description: err.message || "Could not generate questions.", variant: "destructive" });
-    } finally {
-      setAiLoading(false);
-    }
-  };
+  if (!student) {
+    return (
+      <div className="min-h-screen bg-[#f9f9fb] flex items-center justify-center">
+        <p className="text-[#767683]">Student not found.</p>
+      </div>
+    );
+  }
 
-  const handleManualSave = async (data: { title: string; totalMarks: number; obtainedMarks: number }) => {
-    if (!editingSubjectId) return;
-    try {
-      await api.post(`/students/${student._id}/scores`, {
-        subjectId: editingSubjectId,
-        topic: data.title,
-        total: data.totalMarks,
-        obtained: data.obtainedMarks,
-      });
-      // Re-fetch student to reflect new score
-      const updated = await api.get(`/students/${student._id}`);
-      setStudent(updated);
-      toast({ title: "Score saved!", description: `${data.title} score has been recorded.` });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    }
-    setManualOpen(false);
-    setEditingSubjectId(null);
-  };
-
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </div>
-  );
-
-  if (!student) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <p className="text-muted-foreground">Student not found</p>
-    </div>
-  );
-
-  const currentSubject = student.subjects?.find((s: any) => s.subjectId === topicScoresView);
+  const overallStatus: Status = analysis?.overallStatus || "average";
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      <main className="container py-6 animate-fade-in max-w-4xl">
-        {/* Breadcrumbs */}
-        <div className="text-sm text-muted-foreground mb-4">
-          <span className="hover:text-primary cursor-pointer" onClick={() => navigate('/dashboard')}>dashboard</span>
-          {" > "}
-          <span className="hover:text-primary cursor-pointer" onClick={() => navigate(-1)}>grade-{student.grade}</span>
-          {" > "}
-          <span className="text-foreground font-medium">student-detail</span>
+    <div className="min-h-screen bg-[#f9f9fb]">
+      {/* Top Bar */}
+      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl shadow-sm flex items-center gap-4 px-6 py-3">
+        <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-[#f3f3f5] transition-colors">
+          <ArrowLeft className="h-5 w-5 text-[#000666]" />
+        </button>
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-[#000666]">school</span>
+          <span className="text-lg font-extrabold text-[#000666]" style={{ fontFamily: "Manrope, sans-serif" }}>Einstein Matric</span>
         </div>
+        <div className="ml-auto text-sm text-[#767683]">
+          {role === "admin" ? "Admin View" : "Faculty View"}
+        </div>
+      </header>
 
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back
-        </Button>
-
-        {/* Profile Section */}
-        <div className="glass-card rounded-lg p-6 mb-6">
-          <div className="flex items-start gap-4">
-            <div className="w-20 h-20 rounded-lg bg-accent/30 flex items-center justify-center text-2xl font-bold text-primary">
+      <main className="pt-20 px-6 pb-12 max-w-5xl mx-auto">
+        {/* Student Hero Card */}
+        <div className="mt-8 mb-8 bg-gradient-to-br from-[#000666] to-[#1a237e] rounded-3xl p-8 text-white shadow-xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div className="w-20 h-20 rounded-2xl bg-white/10 flex items-center justify-center text-4xl font-bold border-2 border-white/20">
               {student.name?.charAt(0).toUpperCase()}
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">{student.name}</h1>
-              <p className="text-sm text-muted-foreground font-mono">Roll No: {student.rollNo}</p>
-              <p className="text-sm text-muted-foreground mt-1">{student.grade}</p>
-              <p className="text-sm text-muted-foreground">
-                Attendance: {student.attendance?.length > 0
-                  ? `${Math.round((student.attendance.filter((a: any) => a.status === 'present').length / student.attendance.length) * 100)}%`
-                  : 'No data'}
-              </p>
+            <div className="flex-1">
+              <p className="text-[#bdc2ff] text-xs font-bold uppercase tracking-widest mb-1">{student.grade} · Roll #{String(student.rollNo).padStart(3, "0")}</p>
+              <h1 className="text-3xl font-extrabold tracking-tight mb-1" style={{ fontFamily: "Manrope, sans-serif" }}>{student.name}</h1>
+              <p className="text-white/60 text-sm">{student.email}</p>
             </div>
+            {analysis && (
+              <div className="text-right">
+                <p className="text-[#bdc2ff] text-xs font-bold uppercase tracking-widest mb-1">Overall Average</p>
+                <p className="text-5xl font-extrabold" style={{ fontFamily: "Manrope, sans-serif" }}>{analysis.overallAverage}%</p>
+                <span className={`mt-2 inline-block text-xs font-bold px-3 py-1 rounded-full ${overallStatus === "good" ? "bg-green-500/20 text-green-300" : overallStatus === "average" ? "bg-amber-500/20 text-amber-300" : "bg-red-500/20 text-red-300"}`}>
+                  {overallStatus === "good" ? "Performing Well" : overallStatus === "average" ? "Needs Attention" : "At Risk"}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Subject Scores Table */}
-        <div className="rounded-lg border border-border overflow-hidden mb-4">
-          <table className="w-full text-sm">
-            <thead className="bg-muted">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Subject ID</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Subject Name</th>
-                <th className="px-4 py-3 text-center font-medium text-muted-foreground">Scores</th>
-                <th className="px-4 py-3 text-center font-medium text-muted-foreground">View Topics</th>
-                <th className="px-4 py-3 text-center font-medium text-muted-foreground">Add Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(student.subjects || []).map((sub: any) => {
-                const totalObtained = sub.scores?.reduce((sum: number, s: any) => sum + s.obtained, 0) || 0;
-                const totalMarks = sub.scores?.reduce((sum: number, s: any) => sum + s.total, 0) || 0;
-                return (
-                  <tr key={sub.subjectId} className="border-t border-border">
-                    <td className="px-4 py-3 font-mono text-foreground">{sub.subjectId}</td>
-                    <td className="px-4 py-3 text-foreground">{sub.name}</td>
-                    <td className="px-4 py-3 text-center text-foreground font-medium">
-                      {totalMarks > 0 ? `${totalObtained}/${totalMarks}` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button onClick={() => handleViewTopics(sub.subjectId)} className="text-primary hover:text-primary/80">
-                        <Eye className="h-4 w-4 mx-auto" />
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button onClick={() => { setEditingSubjectId(sub.subjectId); setManualOpen(true); }} className="text-secondary hover:text-secondary/80">
-                        <Edit className="h-4 w-4 mx-auto" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {(!student.subjects || student.subjects.length === 0) && (
-                <tr><td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">No subjects added yet</td></tr>
-              )}
-            </tbody>
-          </table>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-8">
+          {[
+            { key: "overview", label: "Weakness Analysis", icon: "analytics" },
+            { key: "subjects", label: "Subject Details",   icon: "menu_book" },
+          ].map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key as any)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all ${tab === t.key ? "bg-[#000666] text-white shadow-lg" : "bg-white text-[#454652] border border-[#e2e2e4] hover:bg-[#f3f3f5]"}`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{t.icon}</span>
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        {/* Topic Scores expanded view */}
-        {topicScoresView && currentSubject && (
-          <div className="rounded-lg border border-border overflow-hidden mb-4 animate-fade-in">
-            <div className="bg-muted px-4 py-2 flex items-center justify-between">
-              <h3 className="text-sm font-medium text-foreground">Topic-wise Scores — {currentSubject.name}</h3>
-              <Button variant="ghost" size="sm" onClick={handleAI} className="text-secondary" disabled={aiLoading}>
-                {aiLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Lightbulb className="h-4 w-4 mr-1" />}
-                AI Recommendations
-              </Button>
-            </div>
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="px-4 py-2 text-left font-medium text-muted-foreground">Topic</th>
-                  <th className="px-4 py-2 text-center font-medium text-muted-foreground">Total</th>
-                  <th className="px-4 py-2 text-center font-medium text-muted-foreground">Obtained</th>
-                  <th className="px-4 py-2 text-center font-medium text-muted-foreground">%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(currentSubject.scores || []).map((score: any, i: number) => {
-                  const pct = Math.round((score.obtained / score.total) * 100);
-                  return (
-                    <tr key={i} className="border-t border-border">
-                      <td className="px-4 py-2 text-foreground">{score.topic}</td>
-                      <td className="px-4 py-2 text-center text-foreground">{score.total}</td>
-                      <td className="px-4 py-2 text-center text-foreground">{score.obtained}</td>
-                      <td className="px-4 py-2 text-center">
-                        <span className={pct >= 70 ? "text-success" : pct >= 50 ? "text-warning" : "text-destructive"}>{pct}%</span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {/* ═══ OVERVIEW / WEAKNESS TAB ═══ */}
+        {tab === "overview" && analysis && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Priority Alert — worst 3 subjects */}
+            {analysis.prioritySubjects.some((s: any) => s.status !== "good") && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                  <h2 className="text-base font-bold text-red-700" style={{ fontFamily: "Manrope, sans-serif" }}>
+                    Priority Focus Areas
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {analysis.prioritySubjects.map((sub: any) => (
+                    <div key={sub.subjectId} className="bg-white rounded-xl p-4 border border-red-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-bold text-[#1a1c1d]">{sub.subjectName}</p>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${STATUS_COLOR[sub.status as Status]}`}>{sub.averagePercentage}%</span>
+                      </div>
+                      <ScoreBar pct={sub.averagePercentage} status={sub.status} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* AI Questions */}
-        {showRecommendations && aiQuestions.length > 0 && (
-          <div className="glass-card rounded-lg p-4 animate-fade-in">
-            <div className="flex items-center gap-2 mb-3">
-              <Lightbulb className="h-5 w-5 text-secondary" />
-              <h3 className="text-sm font-semibold text-foreground">AI Practice Questions</h3>
-            </div>
-            <ul className="space-y-2">
-              {aiQuestions.map((q: any, i: number) => (
-                <li key={i} className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
-                  <span className="font-medium text-foreground">{i + 1}.</span> {q.question}
-                  {q.topic && <span className="ml-2 text-xs text-primary">({q.topic})</span>}
-                </li>
+            {/* All Subjects — Weakness Breakdown */}
+            <div className="grid grid-cols-1 gap-6">
+              {analysis.subjectAnalysis.map((sub: any) => (
+                <div key={sub.subjectId} className="bg-white rounded-2xl p-6 border border-[#e2e2e4] shadow-sm">
+                  {/* Subject Header */}
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-3">
+                      {STATUS_ICON[sub.status as Status]}
+                      <h3 className="text-base font-bold text-[#000666]" style={{ fontFamily: "Manrope, sans-serif" }}>{sub.subjectName}</h3>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full border ${STATUS_COLOR[sub.status as Status]}`}>
+                        {sub.status.toUpperCase()}
+                      </span>
+                      <span className="text-2xl font-extrabold text-[#000666]" style={{ fontFamily: "Manrope, sans-serif" }}>{sub.averagePercentage}%</span>
+                    </div>
+                  </div>
+
+                  {/* Topic Bars */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                    {sub.topics.map((t: any) => (
+                      <div key={t.topic}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="font-medium text-[#454652]">{t.topic}</span>
+                          <span className={`font-bold ${t.status === "good" ? "text-green-600" : t.status === "average" ? "text-amber-600" : "text-red-600"}`}>{t.percentage}%</span>
+                        </div>
+                        <ScoreBar pct={t.percentage} status={t.status} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Suggestions */}
+                  {sub.suggestions.length > 0 && (
+                    <div className="bg-[#f3f3f5] rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Lightbulb className="h-4 w-4 text-amber-500" />
+                        <p className="text-xs font-bold text-[#454652] uppercase tracking-wider">Improvement Suggestions</p>
+                      </div>
+                      <ul className="space-y-2">
+                        {sub.suggestions.map((s: any, i: number) => (
+                          <li key={i} className="flex items-start gap-2 text-sm">
+                            <span className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${STATUS_COLOR[sub.status as Status]}`}>{i + 1}</span>
+                            <span>
+                              <span className="font-bold text-[#1a1c1d]">{s.topic} ({s.percentage}%): </span>
+                              <span className="text-[#454652]">{s.suggestion}</span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
 
-        <ManualEntryModal open={manualOpen} onClose={() => { setManualOpen(false); setEditingSubjectId(null); }} onSave={handleManualSave} />
+        {/* ═══ SUBJECT DETAILS TAB ═══ */}
+        {tab === "subjects" && (
+          <div className="space-y-6 animate-fade-in">
+            {student.subjects?.map((sub: any) => {
+              const avgPct = sub.scores?.length
+                ? Math.round(sub.scores.reduce((s: number, sc: any) => s + (sc.obtained / sc.total), 0) / sub.scores.length * 100)
+                : null;
+              return (
+                <div key={sub.subjectId} className="bg-white rounded-2xl border border-[#e2e2e4] shadow-sm overflow-hidden">
+                  <div className="flex items-center justify-between px-6 py-4 bg-[#f3f3f5] border-b border-[#e2e2e4]">
+                    <div className="flex items-center gap-3">
+                      <BarChart3 className="h-4 w-4 text-[#000666]" />
+                      <h3 className="font-bold text-[#000666]" style={{ fontFamily: "Manrope, sans-serif" }}>{sub.name}</h3>
+                    </div>
+                    {avgPct !== null && (
+                      <span className="text-xl font-extrabold text-[#000666]">{avgPct}%</span>
+                    )}
+                  </div>
+                  <div className="divide-y divide-[#f3f3f5]">
+                    {sub.scores?.map((sc: any, i: number) => {
+                      const pct = Math.round((sc.obtained / sc.total) * 100);
+                      const st: Status = pct >= 70 ? "good" : pct >= 50 ? "average" : "weak";
+                      return (
+                        <div key={i} className="flex items-center gap-4 px-6 py-3">
+                          <span className="w-36 text-sm font-medium text-[#454652] shrink-0">{sc.topic}</span>
+                          <div className="flex-1"><ScoreBar pct={pct} status={st} /></div>
+                          <span className={`text-sm font-bold w-16 text-right ${st === "good" ? "text-green-600" : st === "average" ? "text-amber-600" : "text-red-600"}`}>
+                            {sc.obtained}/{sc.total}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </main>
     </div>
   );

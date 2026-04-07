@@ -65,14 +65,19 @@ const AdminDashboard = () => {
     s.rollNo?.toString().includes(search)
   );
 
-  const handleDeleteStudent = async (id: string) => {
+  const handleDeleteStudent = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"? This will re-index all roll numbers in their grade.`)) return;
     try {
-      await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/students/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/students/${id}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+      );
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Delete failed");
+      }
       setStudents(prev => prev.filter(s => s._id !== id));
-      toast({ title: "Deleted", description: "Student removed and roll numbers re-indexed" });
+      toast({ title: "Deleted", description: `${name} removed. Roll numbers re-indexed automatically.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -377,7 +382,7 @@ const AdminDashboard = () => {
                                   <button className="p-2 hover:bg-[#90efef]/30 rounded-full text-[#006a6a]" onClick={e => { e.stopPropagation(); navigate(`/student/${s._id}`); }}>
                                     <span className="material-symbols-outlined text-lg">visibility</span>
                                   </button>
-                                  <button className="p-2 hover:bg-[#ffdad6]/30 rounded-full text-[#ba1a1a]" onClick={e => { e.stopPropagation(); handleDeleteStudent(s._id); }}>
+                                  <button className="p-2 hover:bg-[#ffdad6]/30 rounded-full text-[#ba1a1a]" onClick={e => { e.stopPropagation(); handleDeleteStudent(s._id, s.name); }}>
                                     <span className="material-symbols-outlined text-lg">delete</span>
                                   </button>
                                 </div>
