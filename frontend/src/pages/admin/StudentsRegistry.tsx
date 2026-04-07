@@ -97,15 +97,23 @@ const StudentsRegistry = () => {
             <p className="text-slate-500 text-sm">Managing {students.length} active enrollments across all grades</p>
           </div>
           <div className="flex gap-3 flex-wrap">
-            {GRADES.slice(0, 5).map(g => (
-              <button
-                key={g}
-                onClick={() => { setGradeFilter(g); setPage(1); }}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full border text-sm font-semibold transition-all ${gradeFilter === g ? "bg-[#000666] text-white border-[#000666]" : "bg-white text-[#1a1c1d] border-[#c6c5d4] hover:bg-[#f3f3f5]"}`}
-              >
-                {g}
-              </button>
-            ))}
+            <button 
+              onClick={() => toast({ title: "New Enrollment", description: "Opening student registration form..." })}
+              className="bg-gradient-to-br from-[#000666] to-[#1a237e] text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 shadow-lg hover:scale-[0.98] transition-transform"
+            >
+              <span className="material-symbols-outlined">person_add</span> New Student
+            </button>
+            <div className="flex gap-2">
+              {GRADES.slice(0, 5).map(g => (
+                <button
+                  key={g}
+                  onClick={() => { setGradeFilter(g); setPage(1); }}
+                  className={`flex items-center gap-2 px-5 py-2 rounded-full border text-sm font-semibold transition-all ${gradeFilter === g ? "bg-[#000666] text-white border-[#000666]" : "bg-white text-[#1a1c1d] border-[#c6c5d4] hover:bg-[#f3f3f5]"}`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
             <select
               className="px-4 py-2 rounded-full border border-[#c6c5d4] text-sm font-semibold bg-white text-[#000666] focus:outline-none"
               value={gradeFilter}
@@ -265,7 +273,10 @@ const StudentsRegistry = () => {
           <div className="bg-[#1a237e] p-8 rounded-xl relative overflow-hidden text-white">
             <h3 className="text-xl font-bold mb-2" style={{ fontFamily: "Manrope, sans-serif" }}>Academic Audit 2024</h3>
             <p className="text-[#bdc2ff] text-sm mb-6 leading-relaxed">Ensure all Grade 10 and Grade 12 scores are finalized before the month-end lockdown.</p>
-            <button className="px-6 py-3 bg-white text-[#000666] rounded-full font-bold text-sm hover:bg-slate-50 transition-all flex items-center gap-2">
+            <button 
+              onClick={() => toast({ title: "Auditor Tool", description: "Initializing institutional audit for AY 2024..." })}
+              className="px-6 py-3 bg-white text-[#000666] rounded-full font-bold text-sm hover:bg-slate-50 transition-all flex items-center gap-2"
+            >
               Open Auditor Tool <span className="material-symbols-outlined">open_in_new</span>
             </button>
             <div className="absolute -right-12 -bottom-12 w-48 h-48 bg-white/10 rounded-full blur-3xl" />

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Loader2, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const GRADE_ICONS = ["menu_book", "science", "functions", "history_edu", "language", "calculate"];
 const GRADE_COLORS = [
@@ -22,15 +23,13 @@ const DAILY_FEED = [
 
 const NAV = [
   { icon: "dashboard",    label: "Dashboard",     path: "/dashboard"           },
-  { icon: "person_4",     label: "Teachers",      path: "/teachers"            },
-  { icon: "group",        label: "Students",      path: "/students"            },
-  { icon: "calendar_month",label:"Schedule",      path: "/schedule"            },
   { icon: "analytics",    label: "Reports",       path: "/reports"             },
   { icon: "settings",     label: "Settings",      path: "/settings"            },
 ];
 
 const FacultyDashboard = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { pathname } = useLocation();
   const [grades, setGrades] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,7 +86,13 @@ const FacultyDashboard = () => {
             return (
               <button
                 key={item.path}
-                onClick={() => item.path === "/dashboard" ? null : toast}
+                onClick={() => {
+                  if (item.path.startsWith("/admin") || item.path === "/dashboard") {
+                    navigate(item.path);
+                  } else {
+                    toast({ title: "Coming Soon", description: `${item.label} module is under development.` });
+                  }
+                }}
                 className={`flex items-center gap-4 rounded-xl px-6 py-4 font-bold transition-all text-left w-full text-sm tracking-wide ${active ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/5"}`}
               >
                 <span className="material-symbols-outlined">{item.icon}</span>
@@ -97,15 +102,6 @@ const FacultyDashboard = () => {
           })}
         </nav>
 
-        {/* Session Info */}
-        <div className="m-6 p-6 bg-white/5 rounded-2xl border border-white/10">
-          <p className="text-[10px] font-bold opacity-50 uppercase tracking-widest mb-1">Current Session</p>
-          <p className="text-sm font-semibold">AY 2023-2024</p>
-          <div className="mt-4 flex items-center gap-2 text-[10px] bg-[#006a6a] px-3 py-1 rounded-full w-fit">
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-            Term 2 Active
-          </div>
-        </div>
       </aside>
 
       {/* ── Top App Bar ── */}
@@ -154,8 +150,18 @@ const FacultyDashboard = () => {
                 {loading ? "" : ` Total of ${grades.reduce((sum, g) => sum + g.students.length, 0)} students in your classes.`}
               </p>
               <div className="mt-8 flex gap-4">
-                <button className="bg-[#006a6a] px-6 py-3 rounded-xl font-bold text-sm shadow-lg hover:-translate-y-0.5 transition-all">Start Morning Session</button>
-                <button className="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl font-bold text-sm transition-all">Review Requests</button>
+                <button 
+                  onClick={() => toast({ title: "Session Started", description: "The morning session has been initialized." })}
+                  className="bg-[#006a6a] px-6 py-3 rounded-xl font-bold text-sm shadow-lg hover:-translate-y-0.5 transition-all"
+                >
+                  Start Morning Session
+                </button>
+                <button 
+                  onClick={() => toast({ title: "Requests", description: "You have 3 pending student requests." })}
+                  className="bg-white/10 hover:bg-white/20 px-6 py-3 rounded-xl font-bold text-sm transition-all"
+                >
+                  Review Requests
+                </button>
               </div>
             </div>
             {/* Decorative right gradient blob */}
@@ -226,16 +232,6 @@ const FacultyDashboard = () => {
                     );
                   })}
 
-                  {/* Add Class Placeholder */}
-                  <button className="group bg-[#f3f3f5] border-2 border-dashed border-[#c6c5d4] rounded-3xl p-6 flex flex-col items-center justify-center gap-4 hover:border-[#000666]/50 hover:bg-white transition-all duration-300 min-h-[280px]">
-                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-[#767683] group-hover:text-[#000666] group-hover:scale-110 transition-all shadow-sm">
-                      <span className="material-symbols-outlined text-3xl">add_task</span>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-bold text-[#1a1c1d]">Assign New Class</p>
-                      <p className="text-[10px] text-[#767683] mt-1">Request addition to schedule</p>
-                    </div>
-                  </button>
                 </div>
               )}
             </section>
@@ -289,20 +285,14 @@ const FacultyDashboard = () => {
                   </div>
                 ))}
               </div>
-              <button className="w-full mt-8 py-4 bg-[#f3f3f5] text-[#000666] font-bold rounded-2xl text-sm hover:bg-[#e8e8ea] transition-colors">
+              <button 
+                onClick={() => toast({ title: "Tasks", description: "Viewing all daily tasks and reminders." })}
+                className="w-full mt-8 py-4 bg-[#f3f3f5] text-[#000666] font-bold rounded-2xl text-sm hover:bg-[#e8e8ea] transition-colors"
+              >
                 View All Tasks
               </button>
             </section>
 
-            {/* Resource Center */}
-            <section className="bg-[#1a237e] rounded-3xl p-8 text-white relative overflow-hidden shadow-lg">
-              <div className="relative z-10">
-                <h4 className="text-lg font-bold mb-2" style={{ fontFamily: "Manrope, sans-serif" }}>Resource Center</h4>
-                <p className="text-white/70 text-xs mb-6 leading-relaxed">Access teaching materials, question banks, and digital textbooks for your assigned grades.</p>
-                <button className="bg-white text-[#000666] px-6 py-2 rounded-xl text-xs font-bold hover:bg-white/90 transition-all">Browse Materials</button>
-              </div>
-              <span className="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl opacity-10">auto_stories</span>
-            </section>
           </div>
         </div>
       </main>
@@ -400,9 +390,6 @@ const FacultyDashboard = () => {
     </div>
   );
 };
-
-// small no-op to avoid unused var lint
-const toast = () => {};
 
 export default FacultyDashboard;
 

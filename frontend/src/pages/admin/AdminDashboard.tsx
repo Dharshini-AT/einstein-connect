@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { X, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import AdminSidebar from "@/components/AdminSidebar";
 
 type Tab = "overview" | "teachers" | "students";
 
@@ -91,9 +92,12 @@ const AdminDashboard = () => {
 
   return (
     <div className="text-[#1a1c1d] min-h-screen bg-[#f9f9fb]">
+      {/* Admin Sidebar */}
+      <AdminSidebar />
+
       {/* Top App Bar */}
-      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl shadow-sm flex items-center justify-between px-6 py-3">
-        <div className="flex items-center gap-3">
+      <header className="fixed top-0 left-[280px] right-0 z-50 bg-white/80 backdrop-blur-xl shadow-sm flex items-center justify-between px-6 py-3">
+        <div className="flex items-center gap-3 invisible md:visible opacity-0">
           <span className="material-symbols-outlined text-[#000666]">school</span>
           <span className="text-xl font-extrabold text-[#000666] tracking-tight" style={{ fontFamily: "Manrope, sans-serif" }}>Einstein Matric</span>
         </div>
@@ -106,40 +110,8 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      {/* Left Sidebar */}
-      <aside className="h-screen w-72 fixed left-0 top-0 bg-[#f3f3f5] flex flex-col gap-2 p-4 border-r border-[#e2e2e4] z-40 pt-20">
-        <div className="px-6 py-4">
-          <span className="text-lg font-bold text-[#000666]" style={{ fontFamily: "Manrope, sans-serif" }}>Admin Portal</span>
-        </div>
-        <nav className="flex flex-col gap-1">
-          {navItems.map(item => (
-            <button
-              key={item.key}
-              onClick={() => { setTab(item.key); setSearch(""); setShowForm(false); }}
-              className={`px-6 py-3 rounded-full font-bold transition-all flex items-center gap-3 ${tab === item.key ? "bg-blue-100 text-[#000666]" : "text-slate-600 hover:bg-slate-200"}`}
-            >
-              <span className="material-symbols-outlined">{item.icon}</span>
-              <span className="text-sm" style={{ fontFamily: "Manrope, sans-serif" }}>{item.label}</span>
-            </button>
-          ))}
-          <div className="mt-6 px-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-2">Management</p>
-          </div>
-          {[{ icon: "analytics", label: "Reports" }, { icon: "settings", label: "Settings" }].map(item => (
-            <button key={item.label} className="text-slate-600 px-6 py-3 hover:bg-slate-200 rounded-full flex items-center gap-3">
-              <span className="material-symbols-outlined">{item.icon}</span>
-              <span className="text-sm" style={{ fontFamily: "Manrope, sans-serif" }}>{item.label}</span>
-            </button>
-          ))}
-          <button className="text-red-600 px-6 py-3 hover:bg-red-50 rounded-full flex items-center gap-3 mt-4" onClick={() => { localStorage.clear(); navigate("/"); }}>
-            <span className="material-symbols-outlined">logout</span>
-            <span className="text-sm font-bold" style={{ fontFamily: "Manrope, sans-serif" }}>Log Out</span>
-          </button>
-        </nav>
-      </aside>
-
       {/* Main */}
-      <main className="ml-72 pt-20 p-8 min-h-screen">
+      <main className="ml-[280px] pt-20 p-8 min-h-screen">
 
         {/* === OVERVIEW TAB === */}
         {tab === "overview" && (

@@ -88,7 +88,10 @@ const TeachersRegistry = () => {
             <h2 className="text-4xl font-extrabold text-[#000666] tracking-tight mb-2" style={{ fontFamily: "Manrope, sans-serif" }}>Teachers Registry</h2>
             <p className="text-slate-500 font-medium">Manage faculty information, academic assignments, and subject roles.</p>
           </div>
-          <button className="bg-gradient-to-br from-[#000666] to-[#1a237e] text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 shadow-lg hover:scale-[0.98] transition-transform">
+          <button 
+            onClick={() => toast({ title: "New Faculty onboarding", description: "Opening registration form..." })}
+            className="bg-gradient-to-br from-[#000666] to-[#1a237e] text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 shadow-lg hover:scale-[0.98] transition-transform"
+          >
             <span className="material-symbols-outlined">add</span> New Entry
           </button>
         </div>

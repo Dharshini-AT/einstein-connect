@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const NAV = [
   { icon: "dashboard",  label: "Dashboard",         path: "/admin/dashboard" },
@@ -10,6 +11,7 @@ const NAV = [
 
 const AdminSidebar = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { pathname } = useLocation();
 
   return (
@@ -52,7 +54,10 @@ const AdminSidebar = () => {
 
       {/* New Entry CTA */}
       <div className="px-4 mt-4">
-        <button className="w-full bg-gradient-to-br from-[#000666] to-[#1a237e] text-white rounded-full py-3 px-6 font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg">
+        <button 
+          onClick={() => toast({ title: "New Entry", description: "Opening enrollment form..." })}
+          className="w-full bg-gradient-to-br from-[#000666] to-[#1a237e] text-white rounded-full py-3 px-6 font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg"
+        >
           <span className="material-symbols-outlined">add</span>
           <span>New Entry</span>
         </button>
@@ -60,7 +65,10 @@ const AdminSidebar = () => {
 
       {/* Bottom links */}
       <div className="mt-auto border-t border-slate-200 pt-4 px-4 space-y-1">
-        <button className="flex items-center gap-4 text-slate-600 px-6 py-3 hover:bg-slate-200 rounded-full w-full">
+        <button 
+          onClick={() => toast({ title: "Support", description: "Contacting technical support..." })}
+          className="flex items-center gap-4 text-slate-600 px-6 py-3 hover:bg-slate-200 rounded-full w-full"
+        >
           <span className="material-symbols-outlined">contact_support</span>
           <span className="font-medium">Support</span>
         </button>
