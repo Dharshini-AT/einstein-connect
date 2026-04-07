@@ -7,23 +7,18 @@ dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/einstein-connect';
 
-// Subject definitions per grade group
-const SUBJECTS_GRADE_1_10 = [
-  { name: 'Mathematics',     code: 'MATH' },
-  { name: 'Science',         code: 'SCI'  },
-  { name: 'Language I',      code: 'LNG1' },
-  { name: 'Language II',     code: 'LNG2' },
-  { name: 'Social Science',  code: 'SOC'  },
-];
-
-const SUBJECTS_GRADE_11_12 = [
-  { name: 'Mathematics', code: 'MATH' },
-  { name: 'Chemistry',   code: 'CHEM' },
-  { name: 'Language I',  code: 'LNG1' },
-  { name: 'Language II', code: 'LNG2' },
-  { name: 'Physics',     code: 'PHY'  },
-  // CS or Bio alternates by student index
-];
+// ─── Subject Definitions ─────────────────────────────────────────────────────
+const SUBJECTS_CONFIG = [
+  { name: 'Mathematics',      code: 'MATH', grades: range(1, 12), teacherCount: 12 },
+  { name: 'Science',          code: 'SCI',  grades: range(1, 10), teacherCount: 11 },
+  { name: 'Language I',       code: 'LNG1', grades: range(1, 12), teacherCount: 11 },
+  { name: 'Language II',      code: 'LNG2', grades: range(1, 12), teacherCount: 11 },
+  { name: 'Social Science',   code: 'SOC',  grades: range(1, 10), teacherCount: 11 },
+  { name: 'Chemistry',        code: 'CHEM', grades: [11, 12],     teacherCount: 11 },
+  { name: 'Physics',          code: 'PHY',  grades: [11, 12],     teacherCount: 11 },
+  { name: 'Computer Science', code: 'CS',   grades: [11, 12],     teacherCount: 11 },
+  { name: 'Biology',          code: 'BIO',  grades: [11, 12],     teacherCount: 11 },
+]; // Total: 12 + 11×8 = 100 teachers
 
 const TOPICS = {
   MATH:  ['Algebra', 'Geometry', 'Calculus', 'Statistics', 'Trigonometry'],
@@ -37,24 +32,47 @@ const TOPICS = {
   BIO:   ['Botany', 'Zoology', 'Genetics', 'Ecology', 'Microbiology'],
 };
 
-const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+function range(start, end) {
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
 
-const buildSubjects = (grade, studentIndex) => {
-  const gradeNum = parseInt(grade.replace('Grade ', ''));
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Distribute grades fairly among N teachers
+function distributeGrades(gradeNums, teacherCount) {
+  const assignments = Array.from({ length: teacherCount }, () => []);
+  gradeNums.forEach((g, i) => assignments[i % teacherCount].push(`Grade ${g}`));
+  return assignments;
+}
+
+// Build subjects for a student based on grade
+function buildStudentSubjects(gradeNum, studentIndex) {
   let defs;
-
   if (gradeNum <= 10) {
-    defs = SUBJECTS_GRADE_1_10;
+    defs = [
+      { name: 'Mathematics',    code: 'MATH' },
+      { name: 'Science',        code: 'SCI'  },
+      { name: 'Language I',     code: 'LNG1' },
+      { name: 'Language II',    code: 'LNG2' },
+      { name: 'Social Science', code: 'SOC'  },
+    ];
   } else {
-    // Alternate CS / Bio for 11th and 12th based on student index
     const elective = studentIndex % 2 === 0
-      ? { name: 'Computer Science', code: 'CS' }
+      ? { name: 'Computer Science', code: 'CS'  }
       : { name: 'Biology',          code: 'BIO' };
-    defs = [...SUBJECTS_GRADE_11_12, elective];
+    defs = [
+      { name: 'Mathematics', code: 'MATH' },
+      { name: 'Chemistry',   code: 'CHEM' },
+      { name: 'Language I',  code: 'LNG1' },
+      { name: 'Language II', code: 'LNG2' },
+      { name: 'Physics',     code: 'PHY'  },
+      elective,
+    ];
   }
-
   return defs.map(sub => ({
-    subjectId: `${sub.code}-G${gradeNum.toString().padStart(2, '0')}`,
+    subjectId: `${sub.code}-G${String(gradeNum).padStart(2, '0')}`,
     name: sub.name,
     scores: (TOPICS[sub.code] || []).map(topic => ({
       topic,
@@ -62,88 +80,106 @@ const buildSubjects = (grade, studentIndex) => {
       obtained: rand(40, 100),
     })),
   }));
-};
+}
 
-mongoose.connect(MONGODB_URI)
-  .then(async () => {
-    console.log('✅ Connected to MongoDB. Wiping existing student/faculty data...');
-    await Faculty.deleteMany({});
-    await Student.deleteMany({});
+// Name pool
+const FIRST_NAMES = [
+  'Aditi','Aryan','Ishani','Kabir','Meera','Rohan','Sanya','Vikram','Priya','Aditya',
+  'Ananya','Rahul','Pooja','Nikhil','Kavya','Akash','Divya','Surya','Riya','Harish',
+  'Nisha','Karthik','Sneha','Prashanth','Kritika','Manish','Shruti','Aman','Tanvi','Sachin',
+  'Lakshmi','Varun','Pavithra','Ajay','Simran','Deepak','Anjali','Ravi','Neha','Siddharth',
+  'Gayathri','Tarun','Bindhu','Pranav','Kavitha','Vijay','Asha','Naveen','Swathi','Ganesh',
+];
+const LAST_NAMES = [
+  'Sharma','Kumar','Verma','Reddy','Nair','Gupta','Patel','Iyer',
+  'Pillai','Rao','Mehta','Das','Singh','Krishnan','Joshi','Srinivas',
+];
+const TEACHER_FIRST = [
+  'Suresh','Meena','Rajesh','Sunita','Anand','Kavitha','Vijay','Preethi',
+  'Murali','Geetha','Arun','Bhavani','Ramesh','Saranya','Dinesh','Vimala',
+  'Manikandan','Uma','Balaji','Chitra','Senthil','Padma','Mohan','Revathi',
+  'Shankar','Indira','Ravi','Malathi','Kannan','Nalini','Saravanan','Jayanthi',
+  'Hariharan','Poonkodi','Venkatesh','Pushpa','Selvam','Gowri','Prakash','Hema',
+  'Subramaniam','Vasantha','Muthukumar','Radha','Krishnamurthy','Sumathi','Ezhil','Lalitha',
+  'Perumal','Ambika',
+];
 
-    // ─── 12 Teachers (one per grade) ─────────────────────────────────────────
-    console.log('➕ Seeding 12 teachers...');
-    const teacherNames = [
-      'Aarav Sharma', 'Priya Nair', 'Rajan Mehta', 'Sunita Pillai',
-      'Vikram Iyer', 'Lakshmi Das', 'Keerthana Raj', 'Suresh Babu',
-      'Ananya Krishnan', 'Deepak Srinivas', 'Meera Patel', 'Arjun Reddy',
-    ];
+mongoose.connect(MONGODB_URI).then(async () => {
+  console.log('✅ Connected to MongoDB. Wiping existing data...');
+  await Faculty.deleteMany({});
+  await Student.deleteMany({});
 
-    const faculties = teacherNames.map((name, i) => ({
-      name,
-      email: i === 0 ? 'teacher1@gmail.com' : `teacher${i + 1}@einstein.edu`,
-      password: 'password123',
-      facultyId: `FAC-${100 + i + 1}`,
-      mobile: `+91 98412 ${String(i).padStart(4, '0')}`,
-      status: 'active',
-      assignedGrades: [`Grade ${i + 1}`],
-    }));
-    await Faculty.insertMany(faculties);
-    console.log(`   ✔ ${faculties.length} teachers inserted`);
+  // ─── Build 100 Teachers ───────────────────────────────────────────────────
+  console.log('\n➕ Seeding 100 teachers...');
+  const faculties = [];
+  let facultyIdx = 0;
 
-    // ─── 50 Students × 12 Grades ─────────────────────────────────────────────
-    const STUDENTS_PER_GRADE = 50;
-    const GRADES = Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`);
-    const firstNames = [
-      'Aditi', 'Aryan', 'Ishani', 'Kabir', 'Meera', 'Rohan', 'Sanya', 'Vikram',
-      'Priya', 'Aditya', 'Ananya', 'Rahul', 'Pooja', 'Nikhil', 'Kavya', 'Akash',
-      'Divya', 'Surya', 'Riya', 'Harish', 'Nisha', 'Karthik', 'Sneha', 'Prashanth',
-      'Kritika', 'Manish', 'Shruti', 'Aman', 'Tanvi', 'Sachin', 'Lakshmi', 'Varun',
-      'Pavithra', 'Ajay', 'Simran', 'Deepak', 'Anjali', 'Ravi', 'Neha', 'Siddharth',
-      'Gayathri', 'Tarun', 'Bindhu', 'Pranav', 'Kavitha', 'Vijay', 'Asha', 'Naveen',
-      'Swathi', 'Ganesh',
-    ];
-    const lastNames = [
-      'Sharma', 'Kumar', 'Verma', 'Reddy', 'Nair', 'Gupta', 'Patel', 'Iyer',
-      'Pillai', 'Rao', 'Mehta', 'Das', 'Singh', 'Krishnan', 'Joshi', 'Srinivas',
-    ];
+  for (const subConfig of SUBJECTS_CONFIG) {
+    const gradeAssignments = distributeGrades(subConfig.grades, subConfig.teacherCount);
 
-    const students = [];
-    let globalIndex = 1;
+    for (let t = 0; t < subConfig.teacherCount; t++) {
+      const isFirst = facultyIdx === 0;
+      const fn = TEACHER_FIRST[facultyIdx % TEACHER_FIRST.length];
+      const ln = LAST_NAMES[facultyIdx % LAST_NAMES.length];
 
-    for (const grade of GRADES) {
-      for (let roll = 1; roll <= STUDENTS_PER_GRADE; roll++) {
-        const isSpecialStudent = globalIndex === 1; // student1@gmail.com
-        const fn = firstNames[(roll - 1) % firstNames.length];
-        const ln = lastNames[(roll - 1) % lastNames.length];
-        const name = `${fn} ${ln}`;
+      faculties.push({
+        name: `${fn} ${ln}`,
+        email: isFirst ? 'teacher1@gmail.com' : `teacher${facultyIdx + 1}@einstein.edu`,
+        password: 'password123',
+        facultyId: `FAC-${String(facultyIdx + 1).padStart(3, '0')}`,
+        mobile: `+91 98412 ${String(facultyIdx).padStart(4, '0')}`,
+        status: 'active',
+        subject: subConfig.name,
+        assignedGrades: gradeAssignments[t],
+      });
 
-        students.push({
-          name,
-          email: isSpecialStudent ? 'student1@gmail.com' : `student${globalIndex}@einstein.edu`,
-          password: 'password123',
-          rollNo: roll,
-          grade,
-          attendance: [],
-          subjects: buildSubjects(grade, roll),
-        });
-
-        globalIndex++;
-      }
-      console.log(`   ✔ Grade ${grade} — ${STUDENTS_PER_GRADE} students queued`);
+      facultyIdx++;
     }
+    console.log(`   ✔ ${subConfig.teacherCount} ${subConfig.name} teachers — grades: ${subConfig.grades.map(g => `G${g}`).join(', ')}`);
+  }
 
-    await Student.insertMany(students);
-    console.log(`\n🎉 Seeding complete! Summary:`);
-    console.log(`   Teachers : ${faculties.length}`);
-    console.log(`   Students : ${students.length}  (${STUDENTS_PER_GRADE}/grade × ${GRADES.length} grades)`);
-    console.log(`\n🔑 Login credentials:`);
-    console.log(`   Admin   : admin@gmail.com     / admin`);
-    console.log(`   Teacher : teacher1@gmail.com  / password123`);
-    console.log(`   (Student login is blocked on this portal)`);
+  await Faculty.insertMany(faculties);
+  console.log(`\n   Total teachers inserted: ${faculties.length}`);
 
-    mongoose.connection.close();
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection failed:', err.message);
-    process.exit(1);
-  });
+  // ─── Build 600 Students (50 × 12 grades) ─────────────────────────────────
+  console.log('\n➕ Seeding 600 students (50/grade × 12 grades)...');
+  const students = [];
+  let globalIndex = 1;
+
+  for (let gradeNum = 1; gradeNum <= 12; gradeNum++) {
+    const grade = `Grade ${gradeNum}`;
+    for (let roll = 1; roll <= 50; roll++) {
+      const isSpecial = globalIndex === 1;
+      const fn = FIRST_NAMES[(roll - 1) % FIRST_NAMES.length];
+      const ln = LAST_NAMES[(roll - 1) % LAST_NAMES.length];
+
+      students.push({
+        name: `${fn} ${ln}`,
+        email: isSpecial ? 'student1@gmail.com' : `student${globalIndex}@einstein.edu`,
+        password: 'password123',
+        rollNo: roll,
+        grade,
+        attendance: [],
+        subjects: buildStudentSubjects(gradeNum, roll),
+      });
+      globalIndex++;
+    }
+    console.log(`   ✔ ${grade} — 50 students`);
+  }
+
+  await Student.insertMany(students);
+
+  console.log(`\n🎉 Seeding complete!`);
+  console.log(`   Faculty  : ${faculties.length} (split across 9 subjects)`);
+  console.log(`   Students : ${students.length}  (50/grade × 12 grades)`);
+  console.log(`\n   Subject breakdown:`);
+  SUBJECTS_CONFIG.forEach(s => console.log(`     ${s.name.padEnd(20)} ${s.teacherCount} teachers → Grades ${s.grades[0]}–${s.grades[s.grades.length - 1]}`));
+  console.log(`\n🔑 Login credentials:`);
+  console.log(`   Admin   : admin@gmail.com     / admin`);
+  console.log(`   Teacher : teacher1@gmail.com  / password123`);
+  mongoose.connection.close();
+
+}).catch(err => {
+  console.error('❌ Connection failed:', err.message);
+  process.exit(1);
+});

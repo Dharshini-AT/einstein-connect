@@ -8,6 +8,7 @@ const facultySchema = new mongoose.Schema({
   photo: { type: String },
   mobile: { type: String },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  subject: { type: String }, // e.g. "Mathematics", "Physics"
   attendance: [{
     date: { type: Date },
     status: { type: String, enum: ['present', 'absent', 'leave'] }
