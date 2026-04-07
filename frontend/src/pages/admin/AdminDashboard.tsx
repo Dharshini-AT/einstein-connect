@@ -97,9 +97,18 @@ const AdminDashboard = () => {
 
       {/* Top App Bar */}
       <header className="fixed top-0 left-[280px] right-0 z-50 bg-white/80 backdrop-blur-xl shadow-sm flex items-center justify-between px-6 py-3">
-        <div className="flex items-center gap-3 invisible md:visible opacity-0">
-          <span className="material-symbols-outlined text-[#000666]">school</span>
-          <span className="text-xl font-extrabold text-[#000666] tracking-tight" style={{ fontFamily: "Manrope, sans-serif" }}>Einstein Matric</span>
+        <div className="flex items-center gap-6">
+          <div className="flex bg-[#f3f3f5] rounded-full p-1">
+            {navItems.map(item => (
+              <button
+                key={item.key}
+                onClick={() => { setTab(item.key); setSearch(""); setShowForm(false); }}
+                className={`px-6 py-1.5 rounded-full text-xs font-bold transition-all ${tab === item.key ? "bg-blue-100 text-[#000666]" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <button className="p-2 hover:bg-slate-100 rounded-full text-slate-600"><span className="material-symbols-outlined">notifications</span></button>

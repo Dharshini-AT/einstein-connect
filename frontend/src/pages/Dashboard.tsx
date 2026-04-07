@@ -23,6 +23,7 @@ const DAILY_FEED = [
 
 const NAV = [
   { icon: "dashboard",    label: "Dashboard",     path: "/dashboard"           },
+  { icon: "group",        label: "Students",      path: "/students"            }, 
   { icon: "analytics",    label: "Reports",       path: "/reports"             },
   { icon: "settings",     label: "Settings",      path: "/settings"            },
 ];
@@ -87,7 +88,9 @@ const FacultyDashboard = () => {
               <button
                 key={item.path}
                 onClick={() => {
-                  if (item.path.startsWith("/admin") || item.path === "/dashboard") {
+                  if (item.path === "/students") {
+                    setShowClasses(true);
+                  } else if (item.path.startsWith("/admin") || item.path === "/dashboard") {
                     navigate(item.path);
                   } else {
                     toast({ title: "Coming Soon", description: `${item.label} module is under development.` });
