@@ -21,17 +21,48 @@ const SUBJECTS_CONFIG = [
   { name: 'Biology',          code: 'BIO',  grades: [11, 12],     teacherCount: 20 },
 ]; // Total: 4×5 + 20×4 = 100 teachers
 
-const TOPICS = {
-  MATH:  ['Algebra', 'Geometry', 'Calculus', 'Statistics', 'Trigonometry'],
-  SCI:   ['Biology', 'Chemistry', 'Physics', 'Earth Science', 'Astronomy'],
-  LNG1:  ['Grammar', 'Comprehension', 'Writing', 'Literature', 'Vocabulary'],
-  LNG2:  ['Speaking', 'Listening', 'Reading', 'Composition', 'Grammar'],
-  SOC:   ['History', 'Geography', 'Civics', 'Economics', 'Political Science'],
-  CHEM:  ['Organic', 'Inorganic', 'Physical', 'Analytical', 'Biochemistry'],
-  PHY:   ['Mechanics', 'Thermodynamics', 'Optics', 'Electromagnetism', 'Modern Physics'],
-  CS:    ['Programming', 'Data Structures', 'Algorithms', 'Databases', 'Networks'],
-  BIO:   ['Botany', 'Zoology', 'Genetics', 'Ecology', 'Microbiology'],
+const GRADE_LEVEL_TOPICS = {
+  PRIMARY: { // Grades 1-4
+    MATH: ['Number Recognition', 'Basic Shapes', 'Simple Addition', 'Counting', 'Patterns'],
+    SCI:  ['Animals & Plants', 'Weather Patterns', 'Our Body', 'The Sun & Moon', 'Safety Habits'],
+    LNG1: ['Alphabets', 'Phonics', 'Storytelling', 'Reading Basics', 'Handwriting'],
+    LNG2: ['Simple Words', 'Nursery Rhymes', 'Listening Skills', 'Role Play', 'Basic Conversation'],
+    SOC:  ['My Family', 'Our School', 'Neighborhood', 'Traffic Rules', 'Festivals'],
+  },
+  MIDDLE: { // Grades 5-8
+    MATH: ['Fraction & Decimals', 'Integers', 'Percentage', 'Surface Area', 'Rational Numbers'],
+    SCI:  ['Cell Biology', 'Force & Pressure', 'Light & Sound', 'Microorganisms', 'Electric Circuits'],
+    LNG1: ['Grammar Basics', 'Creative Writing', 'Poetry Analysis', 'Drama', 'Public Speaking'],
+    LNG2: ['Short Stories', 'Translation', 'Verbs & Tenses', 'Oral Expression', 'Letter Writing'],
+    SOC:  ['Ancient History', 'Indian Constitution', 'Natural Resources', 'Climate Zones', 'Human Rights'],
+  },
+  SECONDARY: { // Grades 9-10
+    MATH: ['Algebraic Expressions', 'Geometry Theorems', 'Trigonometry', 'Coordinate Geometry', 'Statistics'],
+    SCI:  ['Chemical Reactions', 'Laws of Motion', 'Gravitation', 'Life Processes', 'Health & Hygiene'],
+    LNG1: ['Literature Analysis', 'Formal Letters', 'Advanced Grammar', 'Group Discussions', 'Debates'],
+    LNG2: ['Comprehension', 'Functional Grammar', 'Essay Writing', 'Communication Skills', 'Idioms'],
+    SOC:  ['Modern History', 'Economic Development', 'Political Processes', 'Industrialization', 'Global Challenges'],
+  },
+  HIGHER: { // Grades 11-12
+    MATH: ['Calculus', 'Vectors & 3D', 'Probability', 'Determinants', 'Linear Programming'],
+    CHEM: ['Organic Chemistry', 'Equilibrium', 'Electrochemistry', 'Coordination Compounds', 'Thermodynamics'],
+    PHY:  ['Quantum Physics', 'Optics', 'Electromagnetism', 'Semiconductors', 'Nuclear Physics'],
+    CS:   ['Python Programming', 'Data Structures', 'Database Management', 'Object Oriented', 'Networking'],
+    BIO:  ['Genetics', 'Evolution', 'Human Physiology', 'Biotechnology', 'Ecology'],
+    LNG1: ['Contemporary Literature', 'Academic Writing', 'Linguistics', 'Classical Poetry', 'Creative Non-Fiction'],
+    LNG2: ['Advanced Translation', 'Journalism Basics', 'Literature Review', 'Media Studies', 'Critical Thinking'],
+  }
 };
+
+function getGradeLevelTopics(subjectCode, gradeNum) {
+  let level = 'PRIMARY';
+  if (gradeNum >= 11) level = 'HIGHER';
+  else if (gradeNum >= 9) level = 'SECONDARY';
+  else if (gradeNum >= 5) level = 'MIDDLE';
+  
+  const pool = GRADE_LEVEL_TOPICS[level];
+  return pool[subjectCode] || pool['MATH']; // fallback
+}
 
 function range(start, end) {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
@@ -80,7 +111,7 @@ function buildStudentSubjects(gradeNum, studentIndex) {
   return defs.map(sub => ({
     subjectId: `${sub.code}-G${String(gradeNum).padStart(2, '0')}`,
     name: sub.name,
-    scores: (TOPICS[sub.code] || []).map(topic => ({
+    scores: getGradeLevelTopics(sub.code, gradeNum).map(topic => ({
       topic,
       total: 100,
       obtained: rand(40, 100),
