@@ -18,7 +18,7 @@ const AdminDashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [selectedTeacher, setSelectedTeacher] = useState<any>(null);
-  const [fForm, setFForm] = useState({ name: "", email: "", password: "", facultyId: "", mobile: "", status: "active", assignedGrades: "" });
+  const [fForm, setFForm] = useState({ name: "", email: "", password: "", facultyId: "", mobile: "", status: "active", subject: "Mathematics", assignedGrades: [] as string[] });
   const [sForm, setSForm] = useState({ name: "", email: "", password: "", grade: "Grade 1" });
 
   const fetchData = async () => {
@@ -67,18 +67,43 @@ const AdminDashboard = () => {
   );
 
   const handleDeleteStudent = async (id: string, name: string) => {
-    if (!confirm(`Delete "${name}"? This will re-index all roll numbers in their grade.`)) return;
+    if (!confirm(`Are you sure you want to remove "${name}" from the school? This will permanently delete their records and re-index roll numbers for their entire grade.`)) return;
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/students/${id}`,
-        { method: "DELETE", headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      );
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Delete failed");
-      }
+      await api.delete(`/students/${id}`);
       setStudents(prev => prev.filter(s => s._id !== id));
-      toast({ title: "Deleted", description: `${name} removed. Roll numbers re-indexed automatically.` });
+      toast({ title: "Deleted", description: `${name} has been removed from the school records.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleSaveTeacher = async () => {
+    try {
+      if (editingItem) {
+        await api.patch(`/faculty/${editingItem._id}`, fForm);
+        toast({ title: "Updated", description: "Teacher details saved successfully." });
+      } else {
+        await api.post("/faculty", fForm);
+        toast({ title: "Success", description: "New teacher onboarded successfully." });
+      }
+      setShowForm(false);
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleSaveStudent = async () => {
+    try {
+      if (editingItem) {
+        await api.patch(`/students/${editingItem._id}`, sForm);
+        toast({ title: "Reassigned", description: "Student has been reassigned successfully." });
+      } else {
+        await api.post("/students", sForm);
+        toast({ title: "Enrolled", description: "New student enrolled and roll number assigned." });
+      }
+      setShowForm(false);
+      fetchData();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -316,10 +341,19 @@ const AdminDashboard = () => {
                             <td className="px-6 py-5 text-right">
                               <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button className="p-2 hover:bg-[#90efef]/30 rounded-full text-[#006a6a]" onClick={e => { e.stopPropagation(); setSelectedTeacher(t); }}>
-                                  <span className="material-symbols-outlined text-lg">visibility</span>
+                                  <span className="material-symbols-outlined text-lg">manage_accounts</span>
                                 </button>
-                                <button className="p-2 hover:bg-[#ffdad6]/30 rounded-full text-[#ba1a1a]" onClick={e => { e.stopPropagation(); setTeachers(prev => prev.filter(x => x._id !== t._id)); toast({ title: "Removed" }); }}>
-                                  <span className="material-symbols-outlined text-lg">delete</span>
+                                <button className="p-2 hover:bg-[#ffdad6]/30 rounded-full text-[#ba1a1a]" 
+                                  onClick={e => { 
+                                    e.stopPropagation(); 
+                                    if (confirm("Remove this teacher from the school system?")) {
+                                      api.delete(`/faculty/${t._id}`).then(() => {
+                                        setTeachers(prev => prev.filter(x => x._id !== t._id));
+                                        toast({ title: "Teacher Removed" });
+                                      });
+                                    }
+                                  }}>
+                                  <span className="material-symbols-outlined text-lg">person_remove</span>
                                 </button>
                               </div>
                             </td>
@@ -360,11 +394,17 @@ const AdminDashboard = () => {
                               </td>
                               <td className="px-6 py-5 text-right">
                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button className="p-2 hover:bg-[#90efef]/30 rounded-full text-[#006a6a]" onClick={e => { e.stopPropagation(); navigate(`/student/${s._id}`); }}>
-                                    <span className="material-symbols-outlined text-lg">visibility</span>
+                                  <button className="p-2 hover:bg-[#93f2f2]/40 rounded-full text-[#006a6a]" 
+                                    onClick={e => { 
+                                      e.stopPropagation(); 
+                                      setEditingItem(s);
+                                      setSForm({ name: s.name, email: s.email, password: "", grade: s.grade });
+                                      setShowForm(true);
+                                    }}>
+                                    <span className="material-symbols-outlined text-lg">published_with_changes</span>
                                   </button>
                                   <button className="p-2 hover:bg-[#ffdad6]/30 rounded-full text-[#ba1a1a]" onClick={e => { e.stopPropagation(); handleDeleteStudent(s._id, s.name); }}>
-                                    <span className="material-symbols-outlined text-lg">delete</span>
+                                    <span className="material-symbols-outlined text-lg">delete_forever</span>
                                   </button>
                                 </div>
                               </td>
@@ -405,15 +445,39 @@ const AdminDashboard = () => {
                 </div>
               </div>
               <div className="mb-6">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#767683] mb-3">Assigned Grades</p>
-                <div className="flex flex-wrap gap-2">
-                  {(selectedTeacher.assignedGrades || []).length === 0
-                    ? <p className="text-[#767683] text-sm">No grades assigned yet.</p>
-                    : (selectedTeacher.assignedGrades || []).map((g: string) => (
-                      <button key={g} onClick={() => { setSelectedTeacher(null); navigate(`/students/grade/${encodeURIComponent(g)}`); }} className="bg-[#90efef] text-[#006e6e] px-3 py-1 rounded-full text-sm font-bold hover:bg-[#006a6a] hover:text-white transition-colors">
-                        {g} →
-                      </button>
-                    ))}
+                <p className="text-xs font-bold uppercase tracking-widest text-[#767683] mb-3">Manage Academic Assignments</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(selectedTeacher.assignedGrades || []).length === 0 ? (
+                    <p className="text-[#767683] text-sm italic col-span-2">This faculty member currently has no institutional grade assignments.</p>
+                  ) : (
+                    (selectedTeacher.assignedGrades || []).map((g: string) => (
+                      <div key={g} className="bg-slate-50 p-4 rounded-2xl border border-[#e2e2e4] flex items-center justify-between group hover:border-[#000666] transition-colors">
+                        <div>
+                          <p className="text-sm font-bold text-[#000666]">{g}</p>
+                          <p className="text-[10px] text-[#767683] uppercase tracking-wider">{selectedTeacher.subject}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            className="w-8 h-8 rounded-full bg-white border border-[#e2e2e4] flex items-center justify-center text-[#006a6a] hover:bg-[#90efef] transition-colors"
+                            onClick={() => {
+                              setEditingItem(null);
+                              setSForm({ name: "", email: "", password: "", grade: g });
+                              setSelectedTeacher(null);
+                              setShowForm(true);
+                            }}
+                          >
+                            <span className="material-symbols-outlined text-sm">person_add</span>
+                          </button>
+                          <button 
+                            className="w-8 h-8 rounded-full bg-white border border-[#e2e2e4] flex items-center justify-center text-[#000666] hover:bg-[#e0e0ff] transition-colors"
+                            onClick={() => { setSelectedTeacher(null); setTab("students"); setSearch(g); }}
+                          >
+                            <span className="material-symbols-outlined text-sm">group</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -433,30 +497,88 @@ const AdminDashboard = () => {
               <button onClick={() => setShowForm(false)}><X className="h-5 w-5 text-[#767683]" /></button>
             </div>
             {tab === "teachers" ? (
-              <div className="space-y-4">
-                {[{ label: "Name", key: "name" }, { label: "Email", key: "email" }, { label: "Password", key: "password" }, { label: "Faculty ID", key: "facultyId" }, { label: "Mobile", key: "mobile" }, { label: "Assigned Grades (comma-sep)", key: "assignedGrades" }].map(f => (
-                  <div key={f.key}>
-                    <label className="text-xs font-bold text-[#454652] uppercase">{f.label}</label>
-                    <input className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={(fForm as any)[f.key]} onChange={e => setFForm(p => ({ ...p, [f.key]: e.target.value }))} />
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                <div>
+                  <label className="text-xs font-bold text-[#454652] uppercase">Full Name</label>
+                  <input className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={fForm.name} onChange={e => setFForm(p => ({ ...p, name: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#454652] uppercase">Email</label>
+                  <input className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={fForm.email} onChange={e => setFForm(p => ({ ...p, email: e.target.value }))} />
+                </div>
+                {!editingItem && (
+                  <div>
+                    <label className="text-xs font-bold text-[#454652] uppercase">Password</label>
+                    <input type="password" className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={fForm.password} onChange={e => setFForm(p => ({ ...p, password: e.target.value }))} />
                   </div>
-                ))}
-                <button onClick={() => { toast({ title: "Note", description: "Save to DB API endpoint coming soon." }); setShowForm(false); }} className="w-full bg-[#000666] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#000666]/90">Save Teacher</button>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-[#454652] uppercase">Faculty ID</label>
+                    <input className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={fForm.facultyId} onChange={e => setFForm(p => ({ ...p, facultyId: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-[#454652] uppercase">Mobile</label>
+                    <input className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={fForm.mobile} onChange={e => setFForm(p => ({ ...p, mobile: e.target.value }))} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#454652] uppercase">Primary Subject</label>
+                  <select className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none" value={fForm.subject} onChange={e => setFForm(p => ({ ...p, subject: e.target.value }))}>
+                    {["Mathematics", "Science", "Physics", "Chemistry", "Biology", "Computer Science", "Language I", "Language II", "Social Science"].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#454652] uppercase mb-2 block">Assigned Grades</label>
+                  <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl border border-[#e2e2e4]">
+                    {Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`).map(g => (
+                      <label key={g} className="flex items-center gap-2 cursor-pointer group">
+                        <input 
+                          type="checkbox" 
+                          checked={fForm.assignedGrades.includes(g)}
+                          onChange={e => {
+                            const next = e.target.checked 
+                              ? [...fForm.assignedGrades, g]
+                              : fForm.assignedGrades.filter(x => x !== g);
+                            setFForm(p => ({ ...p, assignedGrades: next }));
+                          }}
+                          className="w-4 h-4 rounded text-[#000666] focus:ring-[#006a6a]"
+                        />
+                        <span className="text-xs font-bold text-[#454652] group-hover:text-[#000666]">{g}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={handleSaveTeacher} className="w-full bg-[#000666] text-white py-4 rounded-2xl font-bold text-sm hover:scale-[1.02] transition-transform shadow-lg">
+                  {editingItem ? "Update Teacher Profile" : "Enshrine Teacher"}
+                </button>
               </div>
             ) : (
               <div className="space-y-4">
-                {[{ label: "Name", key: "name" }, { label: "Email", key: "email" }, { label: "Password", key: "password" }].map(f => (
-                  <div key={f.key}>
-                    <label className="text-xs font-bold text-[#454652] uppercase">{f.label}</label>
-                    <input className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={(sForm as any)[f.key]} onChange={e => setSForm(p => ({ ...p, [f.key]: e.target.value }))} />
-                  </div>
-                ))}
                 <div>
-                  <label className="text-xs font-bold text-[#454652] uppercase">Grade</label>
-                  <select className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none" value={sForm.grade} onChange={e => setSForm(p => ({ ...p, grade: e.target.value }))}>
-                    {Array.from({ length: 10 }, (_, i) => `Grade ${i + 1}`).map(g => <option key={g}>{g}</option>)}
-                  </select>
+                  <label className="text-xs font-bold text-[#454652] uppercase">Student Name</label>
+                  <input className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={sForm.name} onChange={e => setSForm(p => ({ ...p, name: e.target.value }))} />
                 </div>
-                <button onClick={() => { toast({ title: "Note", description: "Save to DB endpoint coming soon." }); setShowForm(false); }} className="w-full bg-[#000666] text-white py-3 rounded-xl font-bold text-sm hover:bg-[#000666]/90">Save Student</button>
+                <div>
+                  <label className="text-xs font-bold text-[#454652] uppercase">Email</label>
+                  <input className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={sForm.email} onChange={e => setSForm(p => ({ ...p, email: e.target.value }))} />
+                </div>
+                {!editingItem && (
+                  <div>
+                    <label className="text-xs font-bold text-[#454652] uppercase">Password</label>
+                    <input type="password" className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={sForm.password} onChange={e => setSForm(p => ({ ...p, password: e.target.value }))} />
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs font-bold text-[#454652] uppercase">Grade Assignment</label>
+                  <select className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none" value={sForm.grade} onChange={e => setSForm(p => ({ ...p, grade: e.target.value }))}>
+                    {Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`).map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
+                  <p className="text-[10px] text-slate-400 mt-2">Moving a student will automatically re-assign their roll number alphabetically.</p>
+                </div>
+                <button onClick={handleSaveStudent} className="w-full bg-[#006a6a] text-white py-4 rounded-2xl font-bold text-sm hover:scale-[1.02] transition-transform shadow-lg">
+                  {editingItem ? "Reassign Student" : "Register Student"}
+                </button>
               </div>
             )}
           </div>

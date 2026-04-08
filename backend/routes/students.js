@@ -56,7 +56,73 @@ router.post('/:id/scores', verifyToken, requireRole('faculty'), async (req, res)
   }
 });
 
-// DELETE /api/students/:id
+// Helper to re-index roll numbers for a grade alphabetically by name
+async function reIndexRollNumbers(grade) {
+  const students = await Student.find({ grade }).sort({ name: 1 });
+  for (let i = 0; i < students.length; i++) {
+    students[i].rollNo = i + 1;
+    await students[i].save();
+  }
+}
+
+// POST /api/students — onboarding new student (admin)
+router.post('/', verifyToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { name, email, password, grade } = req.body;
+    
+    // Check if email taken
+    const exists = await Student.findOne({ email });
+    if (exists) return res.status(400).json({ message: 'Email already registered' });
+
+    // Initial rollNo (will be corrected by re-index)
+    const count = await Student.countDocuments({ grade });
+    const student = new Student({
+      name, email, password, grade,
+      rollNo: count + 1,
+      subjects: [],
+      attendance: []
+    });
+
+    await student.save();
+    await reIndexRollNumbers(grade);
+    
+    res.status(201).json(student);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// PATCH /api/students/:id — update student or reassign grade (admin)
+router.patch('/:id', verifyToken, requireRole('admin'), async (req, res) => {
+  try {
+    const student = await Student.findById(req.params.id);
+    if (!student) return res.status(404).json({ message: 'Student not found' });
+
+    const oldGrade = student.grade;
+    const { name, email, password, grade } = req.body;
+
+    if (name) student.name = name;
+    if (email) student.email = email;
+    if (password) student.password = password;
+    if (grade) student.grade = grade;
+
+    await student.save();
+
+    // Re-index names if grade changed or name changed
+    if (grade && grade !== oldGrade) {
+      await reIndexRollNumbers(oldGrade);
+      await reIndexRollNumbers(grade);
+    } else if (name) {
+      await reIndexRollNumbers(student.grade);
+    }
+
+    res.json(student);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// DELETE /api/students/:id — remove student from school (admin)
 router.delete('/:id', verifyToken, requireRole('admin'), async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
@@ -66,12 +132,7 @@ router.delete('/:id', verifyToken, requireRole('admin'), async (req, res) => {
     const grade = student.grade;
     await student.deleteOne();
 
-    // Re-index rollNos for that grade sorted ascending by name
-    const studentsRemaining = await Student.find({ grade }).sort({ name: 1 });
-    for (let i = 0; i < studentsRemaining.length; i++) {
-      studentsRemaining[i].rollNo = i + 1;
-      await studentsRemaining[i].save();
-    }
+    await reIndexRollNumbers(grade);
 
     res.json({ message: 'Student deleted and roll numbers re-indexed' });
   } catch (error) {

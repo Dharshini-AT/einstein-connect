@@ -144,13 +144,16 @@ const FacultyDashboard = () => {
           <div className="relative rounded-3xl overflow-hidden bg-[#000666] p-12 text-white shadow-xl min-h-[280px] flex items-center">
             <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/cubes.png')" }} />
             <div className="relative z-20 max-w-2xl">
-              <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-bold tracking-widest uppercase mb-6">Instructor Portal</span>
+              <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-[10px] font-black tracking-[0.2em] uppercase mb-6">
+                {role === "admin" ? "Institutional Portal" : "Instructor Portal"}
+              </span>
               <h1 className="text-5xl font-extrabold tracking-tight mb-4" style={{ fontFamily: "Manrope, sans-serif" }}>
                 Welcome, {firstName}!
               </h1>
               <p className="text-[#bdc2ff] text-lg font-medium leading-relaxed max-w-xl">
-                You have {grades.length} grade{grades.length !== 1 ? "s" : ""} assigned this term.
-                {loading ? "" : ` Total of ${grades.reduce((sum, g) => sum + g.students.length, 0)} students in your classes.`}
+                {role === "admin" 
+                  ? "Operation control center for all institutional data, faculty management, and student registries."
+                  : `You have ${grades.length} grade${grades.length !== 1 ? "s" : ""} assigned this term. ${loading ? "" : `Total of ${grades.reduce((sum, g) => sum + g.students.length, 0)} students in your classes.`}`}
               </p>
               <div className="mt-8 flex gap-4">
                 <button 
@@ -329,8 +332,8 @@ const FacultyDashboard = () => {
             <div className="px-8 pb-8 -mt-16 relative flex flex-col">
               {/* Avatar */}
               <div className="mx-auto mb-6 relative">
-                <div className="w-32 h-32 rounded-[2rem] border-4 border-white bg-[#e0e0ff] flex items-center justify-center text-[#000666] font-extrabold text-4xl shadow-xl">
-                  {(user.name || "F").charAt(0)}
+                <div className="w-32 h-32 rounded-[2rem] border-4 border-white bg-gradient-to-br from-[#000666] to-[#1a237e] flex items-center justify-center text-white font-extrabold text-4xl shadow-xl">
+                  {(user.name || (role === "admin" ? "A" : "F")).charAt(0)}
                 </div>
                 <div className="absolute bottom-2 right-2 bg-white p-1.5 rounded-full shadow-lg">
                   <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
@@ -338,10 +341,10 @@ const FacultyDashboard = () => {
               </div>
               {/* Name */}
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-extrabold text-[#000666] tracking-tight" style={{ fontFamily: "Manrope, sans-serif" }}>{user.name}</h2>
-                <p className="text-[#767683] uppercase tracking-widest text-[11px] mt-1 font-semibold">{user.subject || "Faculty"}</p>
+                <h2 className="text-2xl font-extrabold text-[#000666] tracking-tight" style={{ fontFamily: "Manrope, sans-serif" }}>{user.name || (role === "admin" ? "Institutional Admin" : "Faculty Member")}</h2>
+                <p className="text-[#767683] uppercase tracking-widest text-[11px] mt-1 font-semibold">{role === "admin" ? "Administrator" : (user.subject || "Faculty")}</p>
                 <div className="flex items-center justify-center gap-2 mt-4">
-                  <span className="px-3 py-1 bg-[#90efef] text-[#006e6e] text-[10px] font-bold uppercase rounded-full">Active</span>
+                  <span className="px-3 py-1 bg-[#90efef] text-[#006e6e] text-[10px] font-black uppercase tracking-widest rounded-full">{role}</span>
                   <span className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-bold uppercase rounded-full flex items-center gap-1">
                     <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>circle</span> Present
                   </span>
@@ -350,9 +353,9 @@ const FacultyDashboard = () => {
               {/* Detail rows */}
               <div className="space-y-3 mb-8">
                 {[
-                  { icon: "id_card",  label: "Faculty ID",   value: user.facultyId || "FAC-001"          },
+                  { icon: "id_card",  label: role === "admin" ? "Admin ID" : "Faculty ID",   value: user.facultyId || (role === "admin" ? "ADM-001" : "FAC-001") },
                   { icon: "mail",     label: "Email",        value: user.email || "—"                     },
-                  { icon: "schedule", label: "Grades",       value: (user.assignedGrades || []).join(", ") },
+                  { icon: "schedule", label: role === "admin" ? "Access Level" : "Grades", value: role === "admin" ? "Full Access" : (user.assignedGrades || []).join(", ") },
                 ].map(row => (
                   <div key={row.label} className="flex items-center p-4 bg-[#f3f3f5] rounded-2xl hover:bg-[#e0e0ff]/40 transition-colors">
                     <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-[#000666] shadow-sm mr-4">
@@ -386,6 +389,7 @@ const FacultyDashboard = () => {
         <AssignedClassesModal
           grades={grades}
           user={user}
+          role={role}
           onClose={() => setShowClasses(false)}
           navigate={navigate}
         />
@@ -397,7 +401,7 @@ const FacultyDashboard = () => {
 export default FacultyDashboard;
 
 // ── Assigned Classes Modal (exported separately for reuse)
-export const AssignedClassesModal = ({ grades, user, onClose, navigate }: any) => {
+export const AssignedClassesModal = ({ grades, user, role, onClose, navigate }: any) => {
   const CARD_ICONS = ["auto_stories", "analytics", "functions", "calculate", "science", "history_edu"];
   const BG_ICONS   = ["calculate",    "functions", "auto_stories", "science", "analytics", "menu_book"];
   return (
@@ -417,9 +421,11 @@ export const AssignedClassesModal = ({ grades, user, onClose, navigate }: any) =
                 </div>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-black tracking-[0.2em] text-[#006a6a] bg-[#90efef] px-2 py-1 rounded-md">Senior Faculty</span>
-                <h3 className="text-3xl font-extrabold text-[#000666] tracking-tighter mt-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{user?.name}</h3>
-                <p className="text-[#454652]">Department of {user?.subject || "General Studies"}</p>
+                <span className="text-[10px] uppercase font-black tracking-[0.2em] text-[#006a6a] bg-[#90efef] px-2 py-1 rounded-md">
+                  {role === "admin" ? "Institutional Lead" : "Senior Faculty"}
+                </span>
+                <h3 className="text-3xl font-extrabold text-[#000666] tracking-tighter mt-2" style={{ fontFamily: 'Manrope, sans-serif' }}>{user?.name || (role === "admin" ? "Administrator" : "Faculty")}</h3>
+                <p className="text-[#454652]">{role === "admin" ? "School Administration" : `Department of ${user?.subject || "General Studies"}`}</p>
               </div>
             </div>
             <button onClick={onClose} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#e8e8ea] transition-colors">
