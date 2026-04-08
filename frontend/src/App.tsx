@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import StudentsRegistry from "./pages/admin/StudentsRegistry";
 import TeachersRegistry from "./pages/admin/TeachersRegistry";
 import AcademicReports from "./pages/admin/AcademicReports";
+import TeacherStudentRegistry from "./pages/TeacherStudentRegistry";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
 
           {/* Faculty */}
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/students/registry" element={<TeacherStudentRegistry />} />
           <Route path="/students/grade/:grade" element={<StudentList />} />
           <Route path="/student/:id" element={<StudentDetail />} />
 

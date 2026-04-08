@@ -86,7 +86,7 @@ const AdminDashboard = () => {
 
   const navItems: { icon: string; label: string; key: Tab }[] = [
     { icon: "dashboard", label: "Overview", key: "overview" },
-    { icon: "person_4", label: "Teachers Table", key: "teachers" },
+    { icon: "person_4", label: "Faculty Table", key: "teachers" },
     { icon: "group", label: "Students Table", key: "students" },
   ];
 

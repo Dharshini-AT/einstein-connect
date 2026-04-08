@@ -3,8 +3,8 @@ import { useToast } from "@/hooks/use-toast";
 
 const NAV = [
   { icon: "dashboard",  label: "Dashboard",         path: "/admin/dashboard" },
-  { icon: "school",     label: "Teachers",           path: "/admin/teachers"  },
-  { icon: "group",      label: "Students",           path: "/admin/students"  },
+  { icon: "school",     label: "Faculty Registry",  path: "/admin/teachers"  },
+  { icon: "group",      label: "Student Registry",  path: "/admin/students"  },
   { icon: "analytics",  label: "Academic Reports",   path: "/admin/reports"   },
   { icon: "settings",   label: "Settings",           path: "/admin/settings"  },
 ];

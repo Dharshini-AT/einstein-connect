@@ -21,13 +21,6 @@ const DAILY_FEED = [
   { icon: "edit_note",        bgColor: "bg-slate-50", iconColor: "text-[#767683]",  hoverBg: "group-hover:bg-slate-300",  title: "Curriculum Review",        sub: "Friday morning slot"          },
 ];
 
-const NAV = [
-  { icon: "dashboard",    label: "Dashboard",     path: "/dashboard"           },
-  { icon: "group",        label: "Students",      path: "/students"            }, 
-  { icon: "analytics",    label: "Reports",       path: "/reports"             },
-  { icon: "settings",     label: "Settings",      path: "/settings"            },
-];
-
 const FacultyDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -37,7 +30,16 @@ const FacultyDashboard = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [showClasses, setShowClasses] = useState(false);
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const firstName = user?.name?.split(" ")[0] || "Faculty";
+  const role = localStorage.getItem("role") || "faculty";
+  const firstName = user?.name?.split(" ")[0] || (role === "admin" ? "Administrator" : "Faculty");
+
+  const NAV = [
+    { icon: "dashboard",    label: "Dashboard",     path: "/dashboard"           },
+    ...(role === "admin" ? [{ icon: "school", label: "Teachers", path: "/admin/teachers" }] : []),
+    { icon: "group",        label: "Students",      path: "/students/registry"    }, 
+    { icon: "analytics",    label: "Reports",       path: "/reports"             },
+    { icon: "settings",     label: "Settings",      path: "/settings"            },
+  ];
 
   useEffect(() => {
     const fetchGrades = async () => {
@@ -88,9 +90,7 @@ const FacultyDashboard = () => {
               <button
                 key={item.path}
                 onClick={() => {
-                  if (item.path === "/students") {
-                    setShowClasses(true);
-                  } else if (item.path.startsWith("/admin") || item.path === "/dashboard") {
+                  if (item.path.startsWith("/admin") || item.path.startsWith("/dashboard") || item.path.startsWith("/students")) {
                     navigate(item.path);
                   } else {
                     toast({ title: "Coming Soon", description: `${item.label} module is under development.` });

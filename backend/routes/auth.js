@@ -21,7 +21,7 @@ router.post('/login', async (req, res) => {
   
   if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
     const token = generateToken(email, 'admin');
-    return res.json({ token, user: { email, role: 'admin' } });
+    return res.json({ token, user: { email, role: 'admin' }, role: 'admin' });
   }
 
   try {
