@@ -37,6 +37,10 @@ app.use('/api/faculty', facultyRoutes);
 app.use('/api/grades', gradesRoutes);
 app.use('/api/students', studentsRoutes);
 
+app.get('/', (req, res) => {
+  res.send('Einstein Connect API is live 🚀');
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
