@@ -39,7 +39,7 @@ const TeacherStudentRegistry = () => {
 
   const filtered = students.filter(s =>
     (selectedGrade === "All" || s.grade === selectedGrade) &&
-    (s.name?.toLowerCase().includes(search.toLowerCase()) || s.rollNo?.toString().includes(search))
+    (s.name?.toLowerCase().includes(search.toLowerCase()) || String(s.rollNo).padStart(3, '0').includes(search))
   );
 
   return (

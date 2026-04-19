@@ -61,9 +61,9 @@ const AdminDashboard = () => {
     t.facultyId?.toLowerCase().includes(search.toLowerCase())
   );
   const filteredStudents = students.filter(s =>
-    s.name?.toLowerCase().includes(search.toLowerCase()) ||
-    s.grade?.toLowerCase().includes(search.toLowerCase()) ||
-    s.rollNo?.toString().includes(search)
+    (s.name?.toLowerCase().includes(search.toLowerCase()) || 
+     s.grade?.toLowerCase().includes(search.toLowerCase()) || 
+     String(s.rollNo).padStart(3, '0').includes(search))
   );
 
   const handleDeleteStudent = async (id: string, name: string) => {

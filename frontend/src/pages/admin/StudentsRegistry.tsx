@@ -47,7 +47,7 @@ const StudentsRegistry = () => {
   const filtered = students.filter(s =>
     (gradeFilter === "All" || s.grade === gradeFilter) &&
     (s.name?.toLowerCase().includes(search.toLowerCase()) ||
-      s.rollNo?.toString().includes(search))
+      String(s.rollNo).padStart(3, '0').includes(search))
   );
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
