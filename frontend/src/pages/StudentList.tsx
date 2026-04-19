@@ -31,7 +31,7 @@ const StudentList = () => {
 
   const filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.rollNo.toString().includes(searchTerm)
+    String(s.rollNo).padStart(3, '0').includes(searchTerm)
   );
 
   const getAttendancePct = (student: any) => {
