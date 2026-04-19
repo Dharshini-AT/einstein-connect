@@ -35,7 +35,15 @@ const TeacherStudentRegistry = () => {
       }
     };
     fetchData();
+    const interval = setInterval(fetchData, 30000); // Polling 30s
+    return () => clearInterval(interval);
   }, [role, assignedGrades.length]);
+
+  const getAttendancePct = (s: any) => {
+    if (!s.attendance?.length) return 0;
+    const present = s.attendance.filter((a: any) => a.status === 'present').length;
+    return Math.round((present / s.attendance.length) * 100);
+  };
 
   const filtered = students.filter(s =>
     (selectedGrade === "All" || s.grade === selectedGrade) &&
@@ -95,6 +103,7 @@ const TeacherStudentRegistry = () => {
                     <th className="px-8 py-5 text-xs font-bold uppercase tracking-widest text-slate-500">Roll No</th>
                     <th className="px-8 py-5 text-xs font-bold uppercase tracking-widest text-slate-500">Name</th>
                     <th className="px-8 py-5 text-xs font-bold uppercase tracking-widest text-slate-500">Grade</th>
+                    <th className="px-8 py-5 text-xs font-bold uppercase tracking-widest text-slate-500 text-center">Attendance</th>
                     <th className="px-8 py-5 text-xs font-bold uppercase tracking-widest text-slate-500">Status</th>
                     <th className="px-8 py-5 text-xs font-bold uppercase tracking-widest text-slate-500 text-right">Action</th>
                   </tr>
@@ -111,6 +120,14 @@ const TeacherStudentRegistry = () => {
                       </td>
                       <td className="px-8 py-5">
                         <span className="bg-[#90efef] text-[#006e6e] text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter">{s.grade}</span>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-16 h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="bg-[#006a6a] h-full" style={{ width: `${getAttendancePct(s)}%` }} />
+                          </div>
+                          <span className="text-xs font-bold text-[#000666]">{getAttendancePct(s)}%</span>
+                        </div>
                       </td>
                       <td className="px-8 py-5">
                          <div className="flex items-center gap-2">

@@ -17,11 +17,23 @@ const AcademicReports = () => {
   const [subject, setSubject]   = useState("Mathematics");
 
   useEffect(() => {
-    api.get("/students")
-      .then(s => setStudents(s))
-      .catch(e => toast({ title: "Error", description: e.message, variant: "destructive" }))
-      .finally(() => setLoading(false));
+    const fetchStudents = () => {
+      api.get("/students")
+        .then(s => setStudents(s))
+        .catch(e => toast({ title: "Error", description: e.message, variant: "destructive" }))
+        .finally(() => setLoading(false));
+    };
+    fetchStudents();
+    const interval = setInterval(fetchStudents, 30000); // Polling 30s
+    return () => clearInterval(interval);
   }, []);
+
+  const handleGenerateReport = () => {
+    toast({ title: "Generating Report", description: `Preparing academic summary for ${gradeFilter}...` });
+    setTimeout(() => {
+      window.print();
+    }, 1000);
+  };
 
   const gradeStudents = students.filter(s => s.grade === gradeFilter);
 
@@ -110,7 +122,10 @@ const AcademicReports = () => {
                 {SUBJECTS_ALL.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
-            <button className="bg-[#006a6a] text-white px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2 hover:opacity-90 transition-opacity">
+            <button 
+              onClick={handleGenerateReport}
+              className="bg-[#006a6a] text-white px-6 py-2 rounded-full font-bold text-sm flex items-center gap-2 hover:opacity-90 transition-opacity"
+            >
               <span className="material-symbols-outlined text-sm">picture_as_pdf</span> Generate Report
             </button>
           </div>

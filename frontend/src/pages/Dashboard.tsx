@@ -29,6 +29,9 @@ const FacultyDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
   const [showClasses, setShowClasses] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const role = localStorage.getItem("role") || "faculty";
   const firstName = user?.name?.split(" ")[0] || (role === "admin" ? "Administrator" : "Faculty");
@@ -59,6 +62,8 @@ const FacultyDashboard = () => {
       }
     };
     fetchGrades();
+    const interval = setInterval(fetchGrades, 30000); // Polling every 30s
+    return () => clearInterval(interval);
   }, []);
 
   const barData = [
@@ -90,7 +95,9 @@ const FacultyDashboard = () => {
               <button
                 key={item.path}
                 onClick={() => {
-                  if (item.path.startsWith("/admin") || item.path.startsWith("/dashboard") || item.path.startsWith("/students")) {
+                  if (item.path === "/settings") {
+                    setShowSettings(true);
+                  } else if (item.path.startsWith("/admin") || item.path.startsWith("/dashboard") || item.path.startsWith("/students")) {
                     navigate(item.path);
                   } else {
                     toast({ title: "Coming Soon", description: `${item.label} module is under development.` });
@@ -304,9 +311,27 @@ const FacultyDashboard = () => {
       </main>
 
       {/* ── FAB ── */}
-      <button className="fixed bottom-8 right-8 w-16 h-16 bg-[#006a6a] text-white rounded-2xl flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all z-40 group">
-        <span className="material-symbols-outlined text-4xl group-hover:rotate-90 transition-transform">add</span>
-      </button>
+      <div className="fixed bottom-8 right-8 z-40 flex flex-col items-end gap-4">
+        {showQuickAdd && (
+          <div className="bg-white rounded-2xl shadow-2xl border border-[#e2e2e4] p-4 mb-2 flex flex-col gap-2 min-w-[200px] animate-in fade-in slide-in-from-bottom-4">
+             <button onClick={() => { setShowQuickAdd(false); toast({ title: "Action", description: "Quick adding student..." }); }} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f3f3f5] rounded-xl text-sm font-bold text-[#000666] transition-colors">
+               <span className="material-symbols-outlined text-xl text-[#006a6a]">person_add</span> Add New Student
+             </button>
+             <button onClick={() => { setShowQuickAdd(false); toast({ title: "Action", description: "Quick marking attendance..." }); }} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f3f3f5] rounded-xl text-sm font-bold text-[#000666] transition-colors">
+               <span className="material-symbols-outlined text-xl text-[#1a237e]">how_to_reg</span> Mark Attendance
+             </button>
+             <button onClick={() => { setShowQuickAdd(false); toast({ title: "Action", description: "Quick uploading record..." }); }} className="flex items-center gap-3 px-4 py-3 hover:bg-[#f3f3f5] rounded-xl text-sm font-bold text-[#000666] transition-colors">
+               <span className="material-symbols-outlined text-xl text-purple-600">upload_file</span> Upload Record
+             </button>
+          </div>
+        )}
+        <button 
+          onClick={() => setShowQuickAdd(!showQuickAdd)}
+          className="w-16 h-16 bg-[#006a6a] text-white rounded-2xl flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all group"
+        >
+          <span className={`material-symbols-outlined text-4xl transition-transform duration-300 ${showQuickAdd ? 'rotate-45' : ''}`}>add</span>
+        </button>
+      </div>
 
       {/* ── Faculty Profile Overlay ── */}
       {showProfile && (
@@ -369,30 +394,118 @@ const FacultyDashboard = () => {
                 ))}
               </div>
               {/* Actions */}
-              <div className="pt-6 border-t border-[#e2e2e4] flex flex-col gap-3">
-                <button className="w-full py-4 bg-[#e8e8ea] hover:bg-[#e2e2e4] text-[#000666] font-bold rounded-2xl flex items-center justify-center gap-2 transition-all">
-                  <span className="material-symbols-outlined">manage_accounts</span> Manage Profile
-                </button>
-                <button
-                  onClick={() => { localStorage.clear(); navigate("/"); }}
-                  className="w-full py-4 bg-red-50 hover:bg-[#ba1a1a] hover:text-white text-[#ba1a1a] font-bold rounded-2xl flex items-center justify-center gap-2 transition-all"
-                >
-                  <span className="material-symbols-outlined">logout</span> Logout
-                </button>
-              </div>
+                {isEditingProfile ? (
+                  <div className="space-y-3">
+                    <div className="bg-[#f3f3f5] p-3 rounded-xl border border-[#000666]/10">
+                       <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Display Name</p>
+                       <input 
+                         id="profileName"
+                         className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-[#000666]" 
+                         defaultValue={user.name} 
+                         onChange={(e) => {
+                           const name = e.target.value;
+                           const emailInput = document.getElementById('profileEmail') as HTMLInputElement;
+                           if (emailInput && name.includes(" ")) {
+                             const [fn, ln] = name.split(" ");
+                             const suggested = `${fn.toLowerCase()}.${ln.toLowerCase()}.${user.facultyId?.split('-')[1] || '1'}@einstein.edu`;
+                             emailInput.placeholder = `Suggested: ${suggested}`;
+                           }
+                         }}
+                       />
+                    </div>
+                    <div className="bg-[#f3f3f5] p-3 rounded-xl border border-[#000666]/10">
+                       <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Update Email</p>
+                       <input 
+                         id="profileEmail"
+                         className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-[#000666]" 
+                         defaultValue={user.email} 
+                       />
+                    </div>
+                    <button 
+                      onClick={() => { 
+                        const name = (document.getElementById('profileName') as HTMLInputElement).value;
+                        const email = (document.getElementById('profileEmail') as HTMLInputElement).value;
+                        const updatedUser = { ...user, name, email };
+                        localStorage.setItem("user", JSON.stringify(updatedUser));
+                        setIsEditingProfile(false); 
+                        toast({ title: "Profile Updated", description: "Your changes have been saved to local session." }); 
+                        window.location.reload();
+                      }}
+                      className="w-full py-4 bg-[#006a6a] text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all mt-4"
+                    >
+                      Save Changes
+                    </button>
+                    <button 
+                      onClick={() => setIsEditingProfile(false)}
+                      className="w-full py-2 text-[#767683] text-xs font-bold hover:underline"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <button onClick={() => setIsEditingProfile(true)} className="w-full py-4 bg-[#e8e8ea] hover:bg-[#e2e2e4] text-[#000666] font-bold rounded-2xl flex items-center justify-center gap-2 transition-all">
+                      <span className="material-symbols-outlined">manage_accounts</span> Manage Profile
+                    </button>
+                    <button
+                      onClick={() => { localStorage.clear(); navigate("/"); }}
+                      className="w-full py-4 bg-red-50 hover:bg-[#ba1a1a] hover:text-white text-[#ba1a1a] font-bold rounded-2xl flex items-center justify-center gap-2 transition-all"
+                    >
+                      <span className="material-symbols-outlined">logout</span> Logout
+                    </button>
+                  </>
+                )}
             </div>
           </div>
         </div>
       )}
-      {/* ── Assigned Classes Modal ── */}
-      {showClasses && (
-        <AssignedClassesModal
-          grades={grades}
-          user={user}
-          role={role}
-          onClose={() => setShowClasses(false)}
-          navigate={navigate}
-        />
+      {/* ── Settings Modal ── */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-[#000666]/30 backdrop-blur-md z-[70] flex items-center justify-center p-6" onClick={() => setShowSettings(false)}>
+           <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+              <div className="p-10">
+                 <div className="flex justify-between items-center mb-10">
+                    <div>
+                       <h2 className="text-3xl font-black text-[#000666]" style={{ fontFamily: 'Manrope, sans-serif' }}>Settings</h2>
+                       <p className="text-slate-500 font-medium mt-1">Configure your dashboard and preferences</p>
+                    </div>
+                    <button onClick={() => setShowSettings(false)} className="w-12 h-12 rounded-full hover:bg-[#f3f3f5] flex items-center justify-center transition-colors">
+                       <span className="material-symbols-outlined text-[#767683]">close</span>
+                    </button>
+                 </div>
+                 
+                 <div className="space-y-6">
+                    {[
+                      { icon: "notifications_active", title: "Push Notifications", sub: "Receive alerts for student requests and staff meetings", toggle: true },
+                      { icon: "dark_mode",            title: "Dark Mode",           sub: "Switch dashboard appearance to dark theme",         toggle: false },
+                      { icon: "language",             title: "Language",            sub: "English (US) — change system language",              toggle: null },
+                      { icon: "security",             title: "Two-Factor Auth",     sub: "Add an extra layer of security to your account",     toggle: false },
+                    ].map((s, i) => (
+                      <div key={i} className="flex items-center gap-6 p-4 rounded-2xl hover:bg-[#f3f3f5] transition-colors border border-transparent hover:border-[#e2e2e4]">
+                         <div className="w-14 h-14 rounded-2xl bg-[#e0e0ff] text-[#000666] flex items-center justify-center shrink-0 shadow-sm">
+                            <span className="material-symbols-outlined text-2xl">{s.icon}</span>
+                         </div>
+                         <div className="flex-grow">
+                            <p className="text-lg font-bold text-[#1a1c1d] tracking-tight">{s.title}</p>
+                            <p className="text-sm text-slate-500 mt-0.5">{s.sub}</p>
+                         </div>
+                         {s.toggle !== null && (
+                           <div className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors ${s.toggle ? 'bg-[#006a6a]' : 'bg-[#c6c5d4]'}`}>
+                              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${s.toggle ? 'left-7' : 'left-1'}`} />
+                           </div>
+                         )}
+                         {s.toggle === null && <span className="material-symbols-outlined text-[#767683]">chevron_right</span>}
+                      </div>
+                    ))}
+                 </div>
+                 
+                 <div className="mt-12 flex gap-4">
+                    <button onClick={() => { setShowSettings(false); toast({ title: "Success", description: "Settings updated successfully." }); }} className="flex-1 py-4 bg-[#000666] text-white font-bold rounded-2xl shadow-xl hover:shadow-[#000666]/20 transition-all">Save Changes</button>
+                    <button onClick={() => setShowSettings(false)} className="flex-1 py-4 bg-[#f3f3f5] text-[#767683] font-bold rounded-2xl hover:bg-[#e8e8ea] transition-all">Cancel</button>
+                 </div>
+              </div>
+           </div>
+        </div>
       )}
     </div>
   );

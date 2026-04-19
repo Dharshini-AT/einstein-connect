@@ -164,11 +164,12 @@ mongoose.connect(MONGODB_URI).then(async () => {
       const fn = TEACHER_FIRST[facultyIdx % TEACHER_FIRST.length];
       const ln = LAST_NAMES[facultyIdx % LAST_NAMES.length];
 
+      const facultyId = `FAC-${String(facultyIdx + 1).padStart(3, '0')}`;
       faculties.push({
         name: `${fn} ${ln}`,
-        email: isFirst ? 'teacher1@gmail.com' : `teacher${facultyIdx + 1}@einstein.edu`,
+        email: isFirst ? 'teacher1@gmail.com' : `${fn.toLowerCase()}.${ln.toLowerCase()}.${facultyIdx + 1}@einstein.edu`,
         password: 'password123',
-        facultyId: `FAC-${String(facultyIdx + 1).padStart(3, '0')}`,
+        facultyId: facultyId,
         mobile: `+91 98412 ${String(facultyIdx).padStart(4, '0')}`,
         status: 'active',
         subject: subConfig.name,
@@ -191,17 +192,31 @@ mongoose.connect(MONGODB_URI).then(async () => {
   for (let gradeNum = 1; gradeNum <= 12; gradeNum++) {
     const grade = `Grade ${gradeNum}`;
     for (let roll = 1; roll <= 100; roll++) {
-      const isSpecial = globalIndex === 1;
-      const fn = FIRST_NAMES[(roll - 1) % FIRST_NAMES.length];
-      const ln = LAST_NAMES[(roll - 1) % LAST_NAMES.length];
+      const nameIdx = (roll - 1 + (gradeNum * 13)) % FIRST_NAMES.length;
+      const lnIdx = (roll - 1 + (gradeNum * 3)) % LAST_NAMES.length;
+      const fn = FIRST_NAMES[nameIdx];
+      const ln = LAST_NAMES[lnIdx];
 
+      // Add dummy attendance
+      const attendance = [];
+      const today = new Date();
+      for (let i = 0; i < 15; i++) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        attendance.push({
+          date: d,
+          status: Math.random() > 0.1 ? 'present' : 'absent'
+        });
+      }
+
+      const isSpecial = globalIndex === 1;
       students.push({
         name: `${fn} ${ln}`,
-        email: isSpecial ? 'student1@gmail.com' : `student${globalIndex}@einstein.edu`,
+        email: isSpecial ? 'student1@gmail.com' : `${fn.toLowerCase()}.${ln.toLowerCase()}.${globalIndex}@einstein.edu`,
         password: 'password123',
         rollNo: roll,
         grade,
-        attendance: [],
+        attendance,
         subjects: buildStudentSubjects(gradeNum, roll),
       });
       globalIndex++;

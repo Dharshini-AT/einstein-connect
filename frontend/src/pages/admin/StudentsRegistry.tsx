@@ -15,12 +15,18 @@ const StudentsRegistry = () => {
   const [search, setSearch] = useState("");
   const [gradeFilter, setGradeFilter] = useState("All");
   const [page, setPage] = useState(1);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
-    api.get("/students")
-      .then(s => setStudents(s))
-      .catch(e => toast({ title: "Error", description: e.message, variant: "destructive" }))
-      .finally(() => setLoading(false));
+    const fetchData = () => {
+      api.get("/students")
+        .then(s => setStudents(s))
+        .catch(e => toast({ title: "Error", description: e.message, variant: "destructive" }))
+        .finally(() => setLoading(false));
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // Polling 30s
+    return () => clearInterval(interval);
   }, []);
 
   const GRADES = ["All", ...Array.from({ length: 12 }, (_, i) => `Grade ${i + 1}`)];
@@ -98,7 +104,7 @@ const StudentsRegistry = () => {
           </div>
           <div className="flex gap-3 flex-wrap">
             <button 
-              onClick={() => toast({ title: "New Enrollment", description: "Opening student registration form..." })}
+              onClick={() => setIsAddModalOpen(true)}
               className="bg-gradient-to-br from-[#000666] to-[#1a237e] text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 shadow-lg hover:scale-[0.98] transition-transform"
             >
               <span className="material-symbols-outlined">person_add</span> New Student
@@ -283,6 +289,44 @@ const StudentsRegistry = () => {
           </div>
         </div>
       </main>
+
+      {/* ── Add Student Modal ── */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 bg-[#000666]/30 backdrop-blur-md z-[70] flex items-center justify-center p-6" onClick={() => setIsAddModalOpen(false)}>
+           <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="p-10">
+                 <h2 className="text-3xl font-black text-[#000666] mb-8" style={{ fontFamily: 'Manrope, sans-serif' }}>New Enrollment</h2>
+                 <form className="space-y-4" onSubmit={e => { e.preventDefault(); setIsAddModalOpen(false); toast({ title: "Enrolled", description: "Student successfully added to registry." }); }}>
+                    <div className="space-y-1">
+                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Full Name</label>
+                       <input className="w-full bg-[#f3f3f5] border-none rounded-2xl p-4 text-sm font-bold text-[#000666] focus:ring-2 focus:ring-[#006a6a]" placeholder="Ex: Aryan Sharma" required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Roll No</label>
+                          <input type="number" className="w-full bg-[#f3f3f5] border-none rounded-2xl p-4 text-sm font-bold text-[#000666] focus:ring-2 focus:ring-[#006a6a]" placeholder="101" required />
+                       </div>
+                       <div className="space-y-1">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Grade</label>
+                          <select className="w-full bg-[#f3f3f5] border-none rounded-2xl p-4 text-sm font-bold text-[#000666] focus:ring-2 focus:ring-[#006a6a] appearance-none" required>
+                             {GRADES.filter(g => g !== 'All').map(g => <option key={g} value={g}>{g}</option>)}
+                          </select>
+                       </div>
+                    </div>
+                    <div className="space-y-1">
+                       <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Email Address</label>
+                       <input type="email" className="w-full bg-[#f3f3f5] border-none rounded-2xl p-4 text-sm font-bold text-[#000666] focus:ring-2 focus:ring-[#006a6a]" placeholder="student@einstein.edu" required />
+                    </div>
+                    
+                    <div className="pt-8 flex gap-4">
+                       <button type="submit" className="flex-1 py-4 bg-[#000666] text-white font-bold rounded-2xl shadow-xl">Complete Registration</button>
+                       <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-6 py-4 text-slate-500 font-bold">Cancel</button>
+                    </div>
+                 </form>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };

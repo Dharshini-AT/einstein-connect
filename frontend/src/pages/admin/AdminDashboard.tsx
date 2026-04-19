@@ -34,7 +34,11 @@ const AdminDashboard = () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { 
+    fetchData(); 
+    const interval = setInterval(fetchData, 30000); // Polling every 30s
+    return () => clearInterval(interval);
+  }, []);
 
   // --- Stats calculations ---
   const totalStudents = students.length;
@@ -87,6 +91,7 @@ const AdminDashboard = () => {
         toast({ title: "Success", description: "New teacher onboarded successfully." });
       }
       setShowForm(false);
+      setFForm({ name: "", email: "", password: "", facultyId: "", mobile: "", status: "active", subject: "Mathematics", assignedGrades: [] as string[] });
       fetchData();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -103,6 +108,7 @@ const AdminDashboard = () => {
         toast({ title: "Enrolled", description: "New student enrolled and roll number assigned." });
       }
       setShowForm(false);
+      setSForm({ name: "", email: "", password: "", grade: "Grade 1" });
       fetchData();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -175,6 +181,19 @@ const AdminDashboard = () => {
                       <p className="text-xs font-bold text-[#767683] uppercase tracking-widest mt-1">{stat.label}</p>
                     </div>
                   ))}
+                </div>
+
+                <div className="bg-gradient-to-r from-[#000666] to-[#1a237e] rounded-3xl p-8 mb-10 text-white flex items-center justify-between shadow-xl">
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">Academic Reports Readiness</h3>
+                    <p className="opacity-80 text-sm max-w-md">Detailed student performance analytics and automated grade summaries are ready for generation.</p>
+                  </div>
+                  <button 
+                    onClick={() => navigate("/admin/reports")}
+                    className="bg-[#90efef] text-[#000666] px-8 py-3 rounded-full font-bold hover:scale-[0.98] transition-transform flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined">analytics</span> Generate Reports
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-10">
@@ -497,10 +516,22 @@ const AdminDashboard = () => {
               <button onClick={() => setShowForm(false)}><X className="h-5 w-5 text-[#767683]" /></button>
             </div>
             {tab === "teachers" ? (
-              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
                 <div>
                   <label className="text-xs font-bold text-[#454652] uppercase">Full Name</label>
-                  <input className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" value={fForm.name} onChange={e => setFForm(p => ({ ...p, name: e.target.value }))} />
+                  <input 
+                    className="mt-1 w-full border border-[#e2e2e4] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#006a6a]" 
+                    value={fForm.name} 
+                    onChange={e => {
+                      const name = e.target.value;
+                      setFForm(p => ({ ...p, name }));
+                      if (name.includes(" ") && !editingItem) {
+                        const [fn, ln] = name.split(" ");
+                        const suggested = `${fn.toLowerCase()}.${ln.toLowerCase()}.${Math.floor(Math.random()*900)+100}@einstein.edu`;
+                        setFForm(p => ({ ...p, email: suggested }));
+                      }
+                    }} 
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-bold text-[#454652] uppercase">Email</label>
